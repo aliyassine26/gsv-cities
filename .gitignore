@@ -1,3 +1,8 @@
 __pycache__
 .ipynb_checkpoints
 LOGS
+env
+/datasets/gsv_xs
+/datasets/sf_xs
+/datasets/tokyo_xs
+/datasets/robotcar_cut_2m_formatted

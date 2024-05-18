@@ -3,12 +3,13 @@ import torch.nn as nn
 import torchvision
 import numpy as np
 
+
 class ResNet(nn.Module):
     def __init__(self,
-                 model_name='resnet50',
-                 pretrained=True,
-                 layers_to_freeze=2,
-                 layers_to_crop=[],
+                 model_name: str = 'resnet50',
+                 pretrained: bool = True,
+                 layers_to_freeze: int = 2,
+                 layers_to_crop: list = [],
                  ):
         """Class representing the resnet backbone used in the pipeline
         we consider resnet network as a list of 5 blocks (from 0 to 4),
@@ -84,7 +85,7 @@ class ResNet(nn.Module):
         out_channels = 2048
         if '34' in model_name or '18' in model_name:
             out_channels = 512
-            
+
         self.out_channels = out_channels // 2 if self.model.layer4 is None else out_channels
         self.out_channels = self.out_channels // 2 if self.model.layer3 is None else self.out_channels
 
