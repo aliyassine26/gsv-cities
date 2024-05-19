@@ -11,54 +11,91 @@ from dataloaders.val.SPEDDataset import SPEDDataset
 
 from prettytable import PrettyTable
 
-IMAGENET_MEAN_STD = {'mean': [0.485, 0.456, 0.406], 
-                     'std': [0.229, 0.224, 0.225]}
+IMAGENET_MEAN_STD = {"mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225]}
 
-VIT_MEAN_STD = {'mean': [0.5, 0.5, 0.5], 
-                'std': [0.5, 0.5, 0.5]}
+VIT_MEAN_STD = {"mean": [0.5, 0.5, 0.5], "std": [0.5, 0.5, 0.5]}
 
 TRAIN_CITIES = [
-    'Bangkok',
-    'BuenosAires',
-    'LosAngeles',
-    'MexicoCity',
-    'OSL', # refers to Oslo
-    'Rome',
-    'Barcelona',
-    'Chicago',
-    'Madrid',
-    'Miami',
-    'Phoenix',
-    'TRT', # refers to Toronto
-    'Boston',
-    'Lisbon',
-    'Medellin',
-    'Minneapolis',
-    'PRG', # refers to Prague
-    'WashingtonDC',
-    'Brussels',
-    'London',
-    'Melbourne',
-    'Osaka',
-    'PRS', # refers to Paris
+    "Bangkok",
+    "BuenosAires",
+    "LosAngeles",
+    "MexicoCity",
+    "OSL",  # refers to Oslo
+    "Rome",
+    "Barcelona",
+    "Chicago",
+    "Madrid",
+    "Miami",
+    "Phoenix",
+    "TRT",  # refers to Toronto
+    "Boston",
+    "Lisbon",
+    "Medellin",
+    "Minneapolis",
+    "PRG",  # refers to Prague
+    "WashingtonDC",
+    "Brussels",
+    "London",
+    "Melbourne",
+    "Osaka",
+    "PRS",  # refers to Paris
 ]
 
 
 class GSVCitiesDataModule(pl.LightningDataModule):
-    def __init__(self,
-                 batch_size=32,
-                 img_per_place=4,
-                 min_img_per_place=4,
-                 shuffle_all=False,
-                 image_size=(480, 640),
-                 num_workers=4,
-                 show_data_stats=True,
-                 cities=TRAIN_CITIES,
-                 mean_std=IMAGENET_MEAN_STD,
-                 batch_sampler=None,
-                 random_sample_from_each_place=True,
-                 val_set_names=['pitts30k_val', 'msls_val']
-                 ):
+    """
+    A PyTorch Lightning DataModule for the GSV-Cities dataset.
+
+    Args:
+        batch_size (int): Number of samples per batch.
+        img_per_place (int): Number of images per place.
+        min_img_per_place (int): Minimum number of images required per place.
+        shuffle_all (bool): Whether to shuffle the dataset.
+        image_size (tuple): Size of the images (height, width).
+        num_workers (int): Number of subprocesses to use for data loading.
+        show_data_stats (bool): Whether to print dataset statistics.
+        cities (list of str): List of city names to include in the dataset.
+        mean_std (dict): Mean and standard deviation values for normalization.
+        batch_sampler (callable, optional): A function that yields a list of batch indices at each iteration.
+        random_sample_from_each_place (bool): Whether to randomly sample images from each place.
+        val_set_names (list of str): Names of the validation sets.
+
+    Attributes:
+        batch_size (int): Number of samples per batch.
+        img_per_place (int): Number of images per place.
+        min_img_per_place (int): Minimum number of images required per place.
+        shuffle_all (bool): Whether to shuffle the dataset.
+        image_size (tuple): Size of the images (height, width).
+        num_workers (int): Number of subprocesses to use for data loading.
+        batch_sampler (callable, optional): A function that yields a list of batch indices at each iteration.
+        show_data_stats (bool): Whether to print dataset statistics.
+        cities (list of str): List of city names to include in the dataset.
+        mean_dataset (list): Mean values for normalization.
+        std_dataset (list): Standard deviation values for normalization.
+        random_sample_from_each_place (bool): Whether to randomly sample images from each place.
+        val_set_names (list of str): Names of the validation sets.
+        train_transform (callable): Transformations to apply to training images.
+        valid_transform (callable): Transformations to apply to validation images.
+        train_loader_config (dict): Configuration for the training DataLoader.
+        valid_loader_config (dict): Configuration for the validation DataLoader.
+
+    """
+
+    def __init__(
+        self,
+        batch_size=32,
+        img_per_place=4,
+        min_img_per_place=4,
+        shuffle_all=False,
+        image_size=(480, 640),
+        num_workers=4,
+        show_data_stats=True,
+        cities=TRAIN_CITIES,
+        mean_std=IMAGENET_MEAN_STD,
+        batch_sampler=None,
+        random_sample_from_each_place=True,
+        val_set_names=["pitts30k_val", "msls_val"],
+    ):
         super().__init__()
         self.batch_size = batch_size
         self.img_per_place = img_per_place
@@ -69,72 +106,95 @@ class GSVCitiesDataModule(pl.LightningDataModule):
         self.batch_sampler = batch_sampler
         self.show_data_stats = show_data_stats
         self.cities = cities
-        self.mean_dataset = mean_std['mean']
-        self.std_dataset = mean_std['std']
+        self.mean_dataset = mean_std["mean"]
+        self.std_dataset = mean_std["std"]
         self.random_sample_from_each_place = random_sample_from_each_place
         self.val_set_names = val_set_names
-        self.save_hyperparameters() # save hyperparameter with Pytorch Lightening
+        self.save_hyperparameters()  # save hyperparameter with Pytorch Lightening
 
-        self.train_transform = T.Compose([
-            T.Resize(image_size, interpolation=T.InterpolationMode.BILINEAR),
-            T.RandAugment(num_ops=3, interpolation=T.InterpolationMode.BILINEAR),
-            T.ToTensor(),
-            T.Normalize(mean=self.mean_dataset, std=self.std_dataset),
-        ])
+        self.train_transform = T.Compose(
+            [
+                T.Resize(image_size, interpolation=T.InterpolationMode.BILINEAR),
+                T.RandAugment(num_ops=3, interpolation=T.InterpolationMode.BILINEAR),
+                T.ToTensor(),
+                T.Normalize(mean=self.mean_dataset, std=self.std_dataset),
+            ]
+        )
 
-        self.valid_transform = T.Compose([
-            T.Resize(image_size, interpolation=T.InterpolationMode.BILINEAR),
-            T.ToTensor(),
-            T.Normalize(mean=self.mean_dataset, std=self.std_dataset)])
+        self.valid_transform = T.Compose(
+            [
+                T.Resize(image_size, interpolation=T.InterpolationMode.BILINEAR),
+                T.ToTensor(),
+                T.Normalize(mean=self.mean_dataset, std=self.std_dataset),
+            ]
+        )
 
         self.train_loader_config = {
-            'batch_size': self.batch_size,
-            'num_workers': self.num_workers,
-            'drop_last': False,
-            'pin_memory': True,
-            'shuffle': self.shuffle_all}
+            "batch_size": self.batch_size,
+            "num_workers": self.num_workers,
+            "drop_last": False,
+            "pin_memory": True,
+            "shuffle": self.shuffle_all,
+        }
 
         self.valid_loader_config = {
-            'batch_size': self.batch_size,
-            'num_workers': self.num_workers//2,
-            'drop_last': False,
-            'pin_memory': True,
-            'shuffle': False}
+            "batch_size": self.batch_size,
+            "num_workers": self.num_workers // 2,
+            "drop_last": False,
+            "pin_memory": True,
+            "shuffle": False,
+        }
 
     def setup(self, stage):
-        if stage == 'fit':
+        """
+        Set up the dataset for different stages (fit, validate, test, predict).
+
+        Args:
+            stage (str): The stage to set up ('fit', 'validate', 'test', 'predict').
+        """
+        if stage == "fit":
             # load train dataloader with reload routine
             self.reload()
 
             # load validation sets (pitts_val, msls_val, ...etc)
             self.val_datasets = []
             for valid_set_name in self.val_set_names:
-                if 'pitts30k' in valid_set_name.lower():
-                    self.val_datasets.append(PittsburghDataset(which_ds=valid_set_name,
-                        input_transform=self.valid_transform))
-                elif valid_set_name.lower() == 'msls_val':
-                    self.val_datasets.append(MSLS(
-                        input_transform=self.valid_transform))
-                elif valid_set_name.lower() == 'nordland':
-                    self.val_datasets.append(NordlandDataset(
-                        input_transform=self.valid_transform))
-                elif valid_set_name.lower() == 'sped':
-                    self.val_datasets.append(SPEDDataset(
-                        input_transform=self.valid_transform))
+                if "pitts30k" in valid_set_name.lower():
+                    self.val_datasets.append(
+                        PittsburghDataset(
+                            which_ds=valid_set_name,
+                            input_transform=self.valid_transform,
+                        )
+                    )
+                elif valid_set_name.lower() == "msls_val":
+                    self.val_datasets.append(MSLS(input_transform=self.valid_transform))
+                elif valid_set_name.lower() == "nordland":
+                    self.val_datasets.append(
+                        NordlandDataset(input_transform=self.valid_transform)
+                    )
+                elif valid_set_name.lower() == "sped":
+                    self.val_datasets.append(
+                        SPEDDataset(input_transform=self.valid_transform)
+                    )
                 else:
                     print(
-                        f'Validation set {valid_set_name} does not exist or has not been implemented yet')
+                        f"Validation set {valid_set_name} does not exist or has not been implemented yet"
+                    )
                     raise NotImplementedError
             if self.show_data_stats:
                 self.print_stats()
 
     def reload(self):
+        """
+        Reload the training dataset.
+        """
         self.train_dataset = GSVCitiesDataset(
             cities=self.cities,
             img_per_place=self.img_per_place,
             min_img_per_place=self.min_img_per_place,
             random_sample_from_each_place=self.random_sample_from_each_place,
-            transform=self.train_transform)
+            transform=self.train_transform,
+        )
 
     def train_dataloader(self):
         self.reload()
@@ -143,27 +203,28 @@ class GSVCitiesDataModule(pl.LightningDataModule):
     def val_dataloader(self):
         val_dataloaders = []
         for val_dataset in self.val_datasets:
-            val_dataloaders.append(DataLoader(
-                dataset=val_dataset, **self.valid_loader_config))
+            val_dataloaders.append(
+                DataLoader(dataset=val_dataset, **self.valid_loader_config)
+            )
         return val_dataloaders
 
     def print_stats(self):
         print()  # print a new line
         table = PrettyTable()
-        table.field_names = ['Data', 'Value']
-        table.align['Data'] = "l"
-        table.align['Value'] = "l"
+        table.field_names = ["Data", "Value"]
+        table.align["Data"] = "l"
+        table.align["Value"] = "l"
         table.header = False
         table.add_row(["# of cities", f"{len(TRAIN_CITIES)}"])
-        table.add_row(["# of places", f'{self.train_dataset.__len__()}'])
-        table.add_row(["# of images", f'{self.train_dataset.total_nb_images}'])
+        table.add_row(["# of places", f"{self.train_dataset.__len__()}"])
+        table.add_row(["# of images", f"{self.train_dataset.total_nb_images}"])
         print(table.get_string(title="Training Dataset"))
         print()
 
         table = PrettyTable()
-        table.field_names = ['Data', 'Value']
-        table.align['Data'] = "l"
-        table.align['Value'] = "l"
+        table.field_names = ["Data", "Value"]
+        table.align["Data"] = "l"
+        table.align["Value"] = "l"
         table.header = False
         for i, val_set_name in enumerate(self.val_set_names):
             table.add_row([f"Validation set {i+1}", f"{val_set_name}"])
@@ -172,13 +233,13 @@ class GSVCitiesDataModule(pl.LightningDataModule):
         print()
 
         table = PrettyTable()
-        table.field_names = ['Data', 'Value']
-        table.align['Data'] = "l"
-        table.align['Value'] = "l"
+        table.field_names = ["Data", "Value"]
+        table.align["Data"] = "l"
+        table.align["Value"] = "l"
         table.header = False
+        table.add_row(["Batch size (PxK)", f"{self.batch_size}x{self.img_per_place}"])
         table.add_row(
-            ["Batch size (PxK)", f"{self.batch_size}x{self.img_per_place}"])
-        table.add_row(
-            ["# of iterations", f"{self.train_dataset.__len__()//self.batch_size}"])
+            ["# of iterations", f"{self.train_dataset.__len__()//self.batch_size}"]
+        )
         table.add_row(["Image size", f"{self.image_size}"])
         print(table.get_string(title="Training config"))
