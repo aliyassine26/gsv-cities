@@ -1,20 +1,20 @@
 import pytorch_lightning as pl
 from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms as T
-
-from dataloaders.train.GSVCitiesDataset import GSVCitiesDataset
-from dataloaders.val.PittsburghDataset import PittsburghDataset
-from dataloaders.val.MapillaryDataset import MSLS
-from dataloaders.val.NordlandDataset import NordlandDataset
-from dataloaders.val.SPEDDataset import SPEDDataset
-
+from torch.utils.data import Sampler
+from train.GSVCitiesDataset import GSVCitiesDataset
+from val.PittsburghDataset import PittsburghDataset
+from val.MapillaryDataset import MSLS
+from val.NordlandDataset import NordlandDataset
+from val.SPEDDataset import SPEDDataset
+import typing
 
 from prettytable import PrettyTable
 
-IMAGENET_MEAN_STD = {'mean': [0.485, 0.456, 0.406], 
+IMAGENET_MEAN_STD = {'mean': [0.485, 0.456, 0.406],
                      'std': [0.229, 0.224, 0.225]}
 
-VIT_MEAN_STD = {'mean': [0.5, 0.5, 0.5], 
+VIT_MEAN_STD = {'mean': [0.5, 0.5, 0.5],
                 'std': [0.5, 0.5, 0.5]}
 
 TRAIN_CITIES = [
@@ -22,43 +22,60 @@ TRAIN_CITIES = [
     'BuenosAires',
     'LosAngeles',
     'MexicoCity',
-    'OSL', # refers to Oslo
+    'OSL',  # refers to Oslo
     'Rome',
     'Barcelona',
     'Chicago',
     'Madrid',
     'Miami',
     'Phoenix',
-    'TRT', # refers to Toronto
+    'TRT',  # refers to Toronto
     'Boston',
     'Lisbon',
     'Medellin',
     'Minneapolis',
-    'PRG', # refers to Prague
+    'PRG',  # refers to Prague
     'WashingtonDC',
     'Brussels',
     'London',
     'Melbourne',
     'Osaka',
-    'PRS', # refers to Paris
+    'PRS',  # refers to Paris
 ]
 
 
 class GSVCitiesDataModule(pl.LightningDataModule):
     def __init__(self,
-                 batch_size=32,
-                 img_per_place=4,
-                 min_img_per_place=4,
-                 shuffle_all=False,
-                 image_size=(480, 640),
-                 num_workers=4,
-                 show_data_stats=True,
-                 cities=TRAIN_CITIES,
-                 mean_std=IMAGENET_MEAN_STD,
-                 batch_sampler=None,
-                 random_sample_from_each_place=True,
-                 val_set_names=['pitts30k_val', 'msls_val']
+                 batch_size: int = 32,
+                 img_per_place: int = 4,
+                 min_img_per_place: int = 4,
+                 shuffle_all: bool = False,
+                 image_size: tuple = (480, 640),
+                 num_workers: int = 4,
+                 show_data_stats: bool = True,
+                 cities: list = TRAIN_CITIES,
+                 mean_std: dict = IMAGENET_MEAN_STD,
+                 batch_sampler: Sampler = None,
+                 random_sample_from_each_place: bool = True,
+                 val_set_names: list = ['pitts30k_val', 'msls_val']
                  ):
+        """
+        Initializes the data loader with the specified parameters.
+
+        Parameters:
+            batch_size (int): The batch size for the data loader.
+            img_per_place (int): The number of images per place.
+            min_img_per_place (int): The minimum number of images per place.
+            shuffle_all (bool): Whether to shuffle all the data.
+            image_size (tuple): The size of the images (height, width).
+            num_workers (int): The number of workers for data loading.
+            show_data_stats (bool): Whether to show data statistics.
+            cities (list): The list of cities to include in the dataset.
+            mean_std (dict): Dictionary containing 'mean' and 'std' keys for dataset normalization.
+            batch_sampler: The batch sampler for the data loader.
+            random_sample_from_each_place (bool): Whether to randomly sample from each place.
+            val_set_names (list): The list of validation set names.
+        """
         super().__init__()
         self.batch_size = batch_size
         self.img_per_place = img_per_place
@@ -73,11 +90,12 @@ class GSVCitiesDataModule(pl.LightningDataModule):
         self.std_dataset = mean_std['std']
         self.random_sample_from_each_place = random_sample_from_each_place
         self.val_set_names = val_set_names
-        self.save_hyperparameters() # save hyperparameter with Pytorch Lightening
+        self.save_hyperparameters()  # save hyperparameter with Pytorch Lightening
 
         self.train_transform = T.Compose([
             T.Resize(image_size, interpolation=T.InterpolationMode.BILINEAR),
-            T.RandAugment(num_ops=3, interpolation=T.InterpolationMode.BILINEAR),
+            T.RandAugment(
+                num_ops=3, interpolation=T.InterpolationMode.BILINEAR),
             T.ToTensor(),
             T.Normalize(mean=self.mean_dataset, std=self.std_dataset),
         ])
@@ -101,7 +119,16 @@ class GSVCitiesDataModule(pl.LightningDataModule):
             'pin_memory': True,
             'shuffle': False}
 
-    def setup(self, stage):
+    def setup(self, stage) -> None:
+        """
+        Setup function to prepare the data loaders and validation sets based on the stage.
+
+        Parameters:
+        - stage (str): The stage for which setup is being performed ('fit' in this case).
+
+        Returns:
+        - None
+        """
         if stage == 'fit':
             # load train dataloader with reload routine
             self.reload()
@@ -111,7 +138,7 @@ class GSVCitiesDataModule(pl.LightningDataModule):
             for valid_set_name in self.val_set_names:
                 if 'pitts30k' in valid_set_name.lower():
                     self.val_datasets.append(PittsburghDataset(which_ds=valid_set_name,
-                        input_transform=self.valid_transform))
+                                                               input_transform=self.valid_transform))
                 elif valid_set_name.lower() == 'msls_val':
                     self.val_datasets.append(MSLS(
                         input_transform=self.valid_transform))
@@ -129,6 +156,17 @@ class GSVCitiesDataModule(pl.LightningDataModule):
                 self.print_stats()
 
     def reload(self):
+        """
+        Reloads the dataset for training with the specified parameters.
+
+        Parameters:
+            self: the instance of the class
+                The current instance of the class.
+
+        Returns:
+            None
+        """
+
         self.train_dataset = GSVCitiesDataset(
             cities=self.cities,
             img_per_place=self.img_per_place,
@@ -136,18 +174,30 @@ class GSVCitiesDataModule(pl.LightningDataModule):
             random_sample_from_each_place=self.random_sample_from_each_place,
             transform=self.train_transform)
 
-    def train_dataloader(self):
+    def train_dataloader(self) -> DataLoader:
+        """
+        Generate the training data loader for the model.
+        No parameters are needed.
+        Returns a DataLoader object with the training dataset and loader configuration.
+        """
+
         self.reload()
         return DataLoader(dataset=self.train_dataset, **self.train_loader_config)
 
-    def val_dataloader(self):
+    def val_dataloader(self) -> typing.List[DataLoader]:
+        """
+        Generate a validation dataloader for each validation dataset using the specified configuration.
+        """
         val_dataloaders = []
         for val_dataset in self.val_datasets:
             val_dataloaders.append(DataLoader(
                 dataset=val_dataset, **self.valid_loader_config))
         return val_dataloaders
 
-    def print_stats(self):
+    def print_stats(self) -> None:
+        """
+        Generate statistics and print them in a tabular format for the training and validation datasets.
+        """
         print()  # print a new line
         table = PrettyTable()
         table.field_names = ['Data', 'Value']
