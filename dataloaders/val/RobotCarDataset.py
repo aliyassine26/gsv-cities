@@ -24,7 +24,7 @@ if not path_obj.joinpath("ref") or not path_obj.joinpath("query"):
     )
 
 
-class PittsburghDataset(Dataset):
+class RobotCarDataset(Dataset):
     def __init__(self, which_ds="robotcar_val", input_transform=None):
 
         assert which_ds.lower() in ["robotcar_val", "robotcar_test"]

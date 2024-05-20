@@ -24,7 +24,7 @@ if not path_obj.joinpath("ref") or not path_obj.joinpath("query"):
     )
 
 
-class PittsburghDataset(Dataset):
+class SFXSDataset(Dataset):
     def __init__(self, which_ds="sfxs_val", input_transform=None):
 
         assert which_ds.lower() in ["sfxs_val", "sfxs_test"]
