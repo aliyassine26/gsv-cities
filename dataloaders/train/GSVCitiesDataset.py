@@ -69,19 +69,19 @@ class GSVBaseDataset(Dataset):
         return sum(list(v.shape[0] for k, v in self.dataframes.items()))
 
     def __getitem__(self, idx):
-        place_id, class_name, img_path = self.main_df.iloc[idx]
+        place_id, class_name, UTMx, UTMy,  img_path = self.main_df.iloc[idx]
         image = Image.open(os.path.join(
             self.root_dir, class_name.lower(), img_path)).convert('RGB')
         if self.transform:
             image = self.transform(image)
-        return place_id, class_name, image
+        return place_id, class_name, UTMx, UTMy , image
 
     def show_random_images(self, n=4):
         for i in range(n):
             idx = random.randint(0, self.main_df.shape[0])
-            place_id, class_name, image = self.__getitem__(idx)
+            place_id, class_name, UTMx, UTMy, image = self.__getitem__(idx)
             show_image(image.permute(1, 2, 0),
-                       f'Place ID: {place_id}, Class: {class_name}')
+                       f'Place ID: {place_id}, Class: {class_name}, Coordinates: {(UTMx, UTMy)}')
 
     def show_random_images_by_city(self, class_name, n=4):
         class_df = self.main_df[self.main_df['class_name'] == class_name]
@@ -90,9 +90,9 @@ class GSVBaseDataset(Dataset):
                 f"Class: {class_name} has only {class_df.shape[0]} images.")
         for i in range(n):
             idx = random.randint(0, class_df.shape[0])
-            place_id, class_name, image = self.__getitem__(idx)
+            place_id, class_name, UTMx, UTMy,  image = self.__getitem__(idx)
             show_image(image.permute(1, 2, 0),
-                       f'Place ID: {place_id}, Class: {class_name}')
+                       f'Place ID: {place_id}, Class: {class_name}, Coordinates: {(UTMx, UTMy)}')
 
     def show_random_images_by_place(self, place_id, class_name, n=4):
         place_df = self.main_df[(self.main_df['place_id'] == place_id) & (
@@ -102,9 +102,9 @@ class GSVBaseDataset(Dataset):
                 f"Place ID: {place_id} has only {place_df.shape[0]} images.")
         for i in range(n):
             idx = random.randint(0, place_df.shape[0])
-            place_id, class_name, image = self.__getitem__(idx)
+            place_id, class_name, UTMx, UTMy, image = self.__getitem__(idx)
             show_image(image.permute(1, 2, 0),
-                       f'Place ID: {place_id}, Class: {class_name}')
+                       f'Place ID: {place_id}, Class: {class_name}, Coordinates: {(UTMx, UTMy)}')
 
     def save_main_df(self, path):
         self.main_df.to_csv(path, index=False)
@@ -266,6 +266,5 @@ class GSVCitiesDataset(GSVBaseDataset):
 
 
 if __name__ == '__main__':
-    dataset = GSVCitiesDataset(cities=['London', 'Boston'], img_per_place=4, min_img_per_place=4,
-                               random_sample_from_each_place=True, transform=default_transform, root_dir=BASE_PATH, dataframes_dir=DF_PATH)
-    print(dataset.__getitem__(0))
+    dataset = GSVBaseDataset()
+    dataset.show_random_images(n=2)
