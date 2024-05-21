@@ -1,3 +1,6 @@
 __pycache__
 .ipynb_checkpoints
 LOGS
+datasets/sf_xs_dataset/
+
+datasets/CrossSeason_CoHOG_Dataset
