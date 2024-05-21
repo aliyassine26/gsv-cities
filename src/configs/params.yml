@@ -1,0 +1,8 @@
+PROJECT_NAME: Visual Place Recognition
+FRAMEWORK: framework
+EXPERIMENT_NAME: experiment
+PHASE: train
+DATASET_NAME: gsv
+MODEL_NAME: resnet18
+FOLDER_NAME: ./new_weights
+MODEL_PATH: /content/drive/MyDrive/MLDL/src/new_weights_best
