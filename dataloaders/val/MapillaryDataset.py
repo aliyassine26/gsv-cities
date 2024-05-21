@@ -6,25 +6,27 @@ import torch
 import numpy as np
 from PIL import Image
 
-DATASET_ROOT = '/home/USER/work/datasets/msls_val/'
-GT_ROOT = '/home/USER/work/gsv-cities/datasets/' # BECAREFUL, this is the ground truth that comes with GSV-Cities
+DATASET_ROOT = 'D:\\Github\\datasets\\msls_val\\'
+# BECAREFUL, this is the ground truth that comes with GSV-Cities
+GT_ROOT = 'D:\\Github\\gsv-cities\\datasets\\'
+
 
 class MSLS(Dataset):
-    def __init__(self, input_transform = None):
-        
+    def __init__(self, input_transform=None):
 
         self.input_transform = input_transform
 
         self.dbImages = np.load(GT_ROOT+'msls_val/msls_val_dbImages.npy')
         self.qIdx = np.load(GT_ROOT+'msls_val/msls_val_qIdx.npy')
         self.qImages = np.load(GT_ROOT+'msls_val/msls_val_qImages.npy')
-        self.ground_truth = np.load(GT_ROOT+'msls_val/msls_val_pIdx.npy', allow_pickle=True)
-        
+        self.ground_truth = np.load(
+            GT_ROOT+'msls_val/msls_val_pIdx.npy', allow_pickle=True)
+
         # reference images then query images
         self.images = np.concatenate((self.dbImages, self.qImages[self.qIdx]))
         self.num_references = len(self.dbImages)
         self.num_queries = len(self.qImages[self.qIdx])
-    
+
     def __getitem__(self, index):
         img = Image.open(DATASET_ROOT + self.images[index])
 
@@ -35,3 +37,9 @@ class MSLS(Dataset):
 
     def __len__(self):
         return len(self.images)
+
+
+if __name__ == '__main__':
+    dataset = MSLS(input_transform=T.ToTensor())
+    print(dataset.ground_truth.shape)
+    print(dataset.qIdx.shape)
