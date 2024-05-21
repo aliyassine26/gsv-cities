@@ -9,8 +9,8 @@ from torch.utils.data import Dataset
 # I hardcoded the image names and ground truth for faster evaluation
 # performance is exactly the same as if you use VPR-Bench.
 
-DATASET_ROOT = "/home/USER/work/datasets/sf_xs/"
-GT_ROOT = "/home/USER/work/gsv-cities/datasets/"  # BECAREFUL, this is the ground truth that comes with GSV-Cities
+DATASET_ROOT = "/Users/hadiibrahim/Dev/POLITO/gsv-cities/datasets/sf_xs_dataset/"
+GT_ROOT = "/Users/hadiibrahim/Dev/POLITO/gsv-cities/datasets/"  # BECAREFUL, this is the ground truth that comes with GSV-Cities
 
 path_obj = Path(DATASET_ROOT)
 if not path_obj.exists():
@@ -38,9 +38,9 @@ class SFXSDataset(Dataset):
         self.qImages = np.load(GT_ROOT + f"SF_XS/{which_ds}_qImages.npy")
 
         # ground truth
-        self.ground_truth = np.load(
-            GT_ROOT + f"SF_XS/{which_ds}_gt.npy", allow_pickle=True
-        )
+        # self.ground_truth = np.load(
+        #     GT_ROOT + f"SF_XS/{which_ds}_gt.npy", allow_pickle=True
+        # )
 
         # reference images then query images
         self.images = np.concatenate((self.dbImages, self.qImages))
@@ -58,3 +58,8 @@ class SFXSDataset(Dataset):
 
     def __len__(self):
         return len(self.images)
+
+
+if __name__ == "__main__":
+    dataset = SFXSDataset()
+    print(dataset.dbImages)
