@@ -1,11 +1,29 @@
 # https://github.com/amaralibey/gsv-cities
 
-import pandas as pd
+import os
+import sys
 from pathlib import Path
-from PIL import Image
+
+MAIN_PATH = Path(__file__).resolve().parent.parent.parent / "utils"
+sys.path.append(str(MAIN_PATH))
+
+import pandas as pd
+import random
+import matplotlib.pyplot as plt
 import torch
-from torch.utils.data import Dataset
-import torchvision.transforms as T
+from torch.utils.data import Dataset, DataLoader
+from PIL import Image
+import typing
+from torchvision import transforms as T
+from config import GSV_CITIES_PATH, DF_PATH
+
+
+def show_image(image, title):
+    plt.imshow(image)
+    plt.title(title)
+    plt.axis("off")
+    plt.show()
+
 
 default_transform = T.Compose(
     [
@@ -14,68 +32,150 @@ default_transform = T.Compose(
     ]
 )
 
-# NOTE: Hard coded path to dataset folder
-BASE_PATH = "/home/USER/work/datasets/gsv_cities/"
-
-if not Path(BASE_PATH).exists():
-    raise FileNotFoundError(
-        "BASE_PATH is hardcoded, please adjust to point to gsv_cities"
-    )
+BASE_PATH = GSV_CITIES_PATH
 
 
-class GSVCitiesDataset(Dataset):
-    """
-    A custom Dataset class for the GSV-Cities dataset.
-
-    Args:
-        cities (list of str): List of city names to include in the dataset.
-        img_per_place (int): Number of images per place.
-        min_img_per_place (int): Minimum number of images required per place.
-        random_sample_from_each_place (bool): Whether to randomly sample images from each place.
-        transform (callable): A function/transform that takes in an image and returns a transformed version.
-        base_path (str): Base path to the dataset directory.
-
-    Attributes:
-        base_path (str): Base path to the dataset directory.
-        cities (list of str): List of city names to include in the dataset.
-        img_per_place (int): Number of images per place.
-        min_img_per_place (int): Minimum number of images required per place.
-        random_sample_from_each_place (bool): Whether to randomly sample images from each place.
-        transform (callable): A function/transform that takes in an image and returns a transformed version.
-        dataframe (pd.DataFrame): DataFrame containing image metadata for the specified cities.
-        places_ids (np.ndarray): Array of unique place IDs.
-        total_nb_images (int): Total number of images in the dataset.
-    """
-
+class GSVBaseDataset(Dataset):
     def __init__(
         self,
-        cities=["London", "Boston"],
-        img_per_place=4,
-        min_img_per_place=4,
-        random_sample_from_each_place=True,
-        transform=default_transform,
-        base_path=BASE_PATH,
+        root_dir: str = BASE_PATH,
+        dataframes_dir: str = DF_PATH,
+        transform: T.transforms.Compose = default_transform,
     ):
-        super(GSVCitiesDataset, self).__init__()
-        self.base_path = base_path
+        """Initialize the GSVBaseDataset class.
+
+        Args:
+            root_dir (str): root directory of the dataset.
+            transform (transform, optional): transformation to apply to the images.
+        """
+
+        self.root_dir = root_dir
+        self.transform = transform
+        self.dataframes_dir = dataframes_dir
+        self.dataframes = self.__get_dataframes()
+        self.main_df = pd.concat(list(self.dataframes.values()), axis=0)
+        self.total_nb_images = len(self.main_df)
+
+    def __get_dataframes(self):
+        dataframes = {}
+        for city in os.listdir(self.dataframes_dir):
+            if city.endswith(".csv"):
+                df = pd.read_csv(os.path.join(self.dataframes_dir, city))
+                dataframes[city] = df
+        return dataframes
+
+    def get_dataframes_list(self):
+        return list(self.dataframes.values())
+
+    def get_dataframe(self, city):
+        return self.dataframes[city]
+
+    def __len__(self):
+        return sum(list(v.shape[0] for k, v in self.dataframes.items()))
+
+    def __getitem__(self, idx):
+        place_id, class_name, img_path = self.main_df.iloc[idx]
+        image = Image.open(
+            os.path.join(self.root_dir, class_name.lower(), img_path)
+        ).convert("RGB")
+        if self.transform:
+            image = self.transform(image)
+        return place_id, class_name, image
+
+    def show_random_images(self, n=4):
+        for i in range(n):
+            idx = random.randint(0, self.main_df.shape[0])
+            place_id, class_name, image = self.__getitem__(idx)
+            show_image(
+                image.permute(1, 2, 0), f"Place ID: {place_id}, Class: {class_name}"
+            )
+
+    def show_random_images_by_city(self, class_name, n=4):
+        class_df = self.main_df[self.main_df["class_name"] == class_name]
+        if class_df.shape[0] < n:
+            raise ValueError(
+                f"Class: {class_name} has only {class_df.shape[0]} images."
+            )
+        for i in range(n):
+            idx = random.randint(0, class_df.shape[0])
+            place_id, class_name, image = self.__getitem__(idx)
+            show_image(
+                image.permute(1, 2, 0), f"Place ID: {place_id}, Class: {class_name}"
+            )
+
+    def show_random_images_by_place(self, place_id, class_name, n=4):
+        place_df = self.main_df[
+            (self.main_df["place_id"] == place_id)
+            & (self.main_df["class_name"] == class_name)
+        ]
+        if place_df.shape[0] < n:
+            raise ValueError(
+                f"Place ID: {place_id} has only {place_df.shape[0]} images."
+            )
+        for i in range(n):
+            idx = random.randint(0, place_df.shape[0])
+            place_id, class_name, image = self.__getitem__(idx)
+            show_image(
+                image.permute(1, 2, 0), f"Place ID: {place_id}, Class: {class_name}"
+            )
+
+    def save_main_df(self, path):
+        self.main_df.to_csv(path, index=False)
+
+
+#########################################################################################################
+
+
+class GSVCitiesDataset(GSVBaseDataset):
+    def __init__(
+        self,
+        cities: list = ["London", "Boston"],
+        img_per_place: int = 4,
+        min_img_per_place: int = 4,
+        random_sample_from_each_place: bool = True,
+        transform: T.transforms.Compose = default_transform,
+        root_dir: str = BASE_PATH,
+        dataframes_dir: str = DF_PATH,
+    ) -> Dataset:
+        """
+        Initialize the class for GSV-CITIES Dataset.
+
+        Parameters:
+            cities (list): List of cities to load images from.
+            img_per_place (int): Number of images to load per place.
+            min_img_per_place (int): Minimum number of images per place.
+            random_sample_from_each_place (bool): Flag indicating whether to randomly sample images from each place.
+            transform (torchvision.transforms.Compose): Transformation to apply to the images.
+            base_path (str): Base path to the dataset folder.
+
+        Raises:
+            AssertionError: If img_per_place is greater than min_img_per_place.
+
+        Returns:
+            None
+        """
+        super(GSVCitiesDataset, self).__init__(
+            root_dir=root_dir, dataframes_dir=dataframes_dir, transform=transform
+        )
         self.cities = cities
 
         assert (
             img_per_place <= min_img_per_place
         ), f"img_per_place should be less than {min_img_per_place}"
+
         self.img_per_place = img_per_place
         self.min_img_per_place = min_img_per_place
         self.random_sample_from_each_place = random_sample_from_each_place
-        self.transform = transform
 
-        # generate the dataframe contraining images metadata
+        self.dfs = self.get_dataframes_list()
         self.dataframe = self.__getdataframes()
 
-        # get all unique place ids
+        # place_ids is a list of lists, each list contains the UNIQUE place_ids of a city
         self.places_ids = pd.unique(self.dataframe.index)
+        # self.total_nb_images already inherited
         self.total_nb_images = len(self.dataframe)
 
-    def __getdataframes(self):
+    def __getdataframes(self) -> pd.DataFrame:
         """
         Return one dataframe containing
         all info about the images from all cities
@@ -85,13 +185,13 @@ class GSVCitiesDataset(Dataset):
         for each city in self.cities
         """
         # read the first city dataframe
-        df = pd.read_csv(self.base_path + "Dataframes/" + f"{self.cities[0]}.csv")
+        df = pd.read_csv(self.dataframes_dir + f"\\{self.cities[0].lower()}.csv")
         df = df.sample(frac=1)  # shuffle the city dataframe
 
         # append other cities one by one
         for i in range(1, len(self.cities)):
             tmp_df = pd.read_csv(
-                self.base_path + "Dataframes/" + f"{self.cities[i]}.csv"
+                self.dataframes_dir + f"\\{self.cities[i].lower()}.csv"
             )
 
             # Now we add a prefix to place_id, so that we
@@ -113,36 +213,38 @@ class GSVCitiesDataset(Dataset):
         ]
         return res.set_index("place_id")
 
-    def __getitem__(self, index):
-        """
-        Retrieve images and corresponding place ID for the given index.
+    def get_df(self):
+        return self.dataframe
 
-        Args:
-            index (int): Index of the place.
+    def __getitem__(self, index) -> typing.Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Retrieve a place and its corresponding images from the dataset based on the index.
+
+        Parameters:
+            index (int): The index of the place to retrieve.
 
         Returns:
-            torch.Tensor: Tensor containing images of the place.
-            torch.Tensor: Tensor containing the place ID repeated for each image.
+            torch.Tensor: A tensor containing K images of the place.
+            torch.Tensor: A tensor containing the place ID repeated K times.
         """
         place_id = self.places_ids[index]
 
         # get the place in form of a dataframe (each row corresponds to one image)
         place = self.dataframe.loc[place_id]
 
+        city = place["class_name"].iloc[0]
         # sample K images (rows) from this place
         # we can either sort and take the most recent k images
         # or randomly sample them
         if self.random_sample_from_each_place:
             place = place.sample(n=self.img_per_place)
         else:  # always get the same most recent images
-            place = place.sort_values(by=["year", "month", "lat"], ascending=False)
             place = place[: self.img_per_place]
 
         imgs = []
         for i, row in place.iterrows():
-            img_name = self.get_img_name(row)
-            img_path = self.base_path + "Images/" + row["city_id"] + "/" + img_name
-            img = self.image_loader(img_path)
+            img_path = self.get_img_name(row)
+            img = self.image_loader(os.path.join(self.root_dir, city, img_path))
 
             if self.transform is not None:
                 img = self.transform(img)
@@ -150,64 +252,46 @@ class GSVCitiesDataset(Dataset):
             imgs.append(img)
 
         # NOTE: contrary to image classification where __getitem__ returns only one image
-        # in GSVCities, we return a place, which is a Tesor of K images (K=self.img_per_place)
+        # in GSVCities, we return a place, which is a Tensor of K images (K=self.img_per_place)
         # this will return a Tensor of shape [K, channels, height, width]. This needs to be taken into account
         # in the Dataloader (which will yield batches of shape [BS, K, channels, height, width])
         return torch.stack(imgs), torch.tensor(place_id).repeat(self.img_per_place)
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Denotes the total number of places (not images)"""
         return len(self.places_ids)
 
     @staticmethod
-    def image_loader(path):
+    def image_loader(path) -> Image.Image:
         return Image.open(path).convert("RGB")
 
     @staticmethod
-    def get_img_name(row):
-        """
-        Load an image from the given path.
-
-        Args:
-            path (str): Path to the image file.
-
-        Returns:
-            PIL.Image.Image: Loaded image.
-        """
+    def get_img_name(row) -> str:
         # given a row from the dataframe
         # return the corresponding image name
 
-        city = row["city_id"]
+        city = row["class_name"]
 
         # now remove the two digit we added to the id
         # they are superficially added to make ids different
         # for different cities
-        pl_id = (
-            row.name % 10**5
-        )  # row.name is the index of the row, not to be confused with image name
+        # row.name is the index of the row, not to be confused with image name
+        pl_id = row.name % 10**5
         pl_id = str(pl_id).zfill(7)
 
-        panoid = row["panoid"]
-        year = str(row["year"]).zfill(4)
-        month = str(row["month"]).zfill(2)
-        northdeg = str(row["northdeg"]).zfill(3)
-        lat, lon = str(row["lat"]), str(row["lon"])
-        name = (
-            city
-            + "_"
-            + pl_id
-            + "_"
-            + year
-            + "_"
-            + month
-            + "_"
-            + northdeg
-            + "_"
-            + lat
-            + "_"
-            + lon
-            + "_"
-            + panoid
-            + ".jpg"
-        )
-        return name
+        img_name = row["filename"]
+
+        return img_name
+
+
+if __name__ == "__main__":
+    dataset = GSVCitiesDataset(
+        cities=["London", "Boston"],
+        img_per_place=4,
+        min_img_per_place=4,
+        random_sample_from_each_place=True,
+        transform=default_transform,
+        root_dir=BASE_PATH,
+        dataframes_dir=DF_PATH,
+    )
+    print(dataset.__getitem__(0))

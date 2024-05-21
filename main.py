@@ -7,6 +7,15 @@ import utils
 from dataloaders.GSVCitiesDataloader import GSVCitiesDataModule
 from models import helper
 
+from src.configs.args import parse_args
+from argparse import Namespace
+
+
+def get_args() -> Namespace:
+    parser = parse_args()
+    args = parser.parse_args()
+    return args
+
 
 class VPRModel(pl.LightningModule):
     """This is the main model for Visual Place Recognition
@@ -249,7 +258,7 @@ class VPRModel(pl.LightningModule):
 
 
 if __name__ == "__main__":
-
+    args = get_args()
     pl.utilities.seed.seed_everything(seed=1, workers=True)
 
     # the datamodule contains train and validation dataloaders,
@@ -257,19 +266,16 @@ if __name__ == "__main__":
     # if you want to train on specific cities, you can comment/uncomment
     # cities from the list TRAIN_CITIES
     datamodule = GSVCitiesDataModule(
-        batch_size=2,
-        img_per_place=4,
-        min_img_per_place=4,
+        batch_size=args.batch_size,
+        img_per_place=args.img_per_place,
+        min_img_per_place=args.min_img_per_place,
         # cities=['London', 'Boston', 'Melbourne'], # you can sppecify cities here or in GSVCitiesDataloader.py
-        shuffle_all=False,  # shuffle all images or keep shuffling in-city only
-        random_sample_from_each_place=True,
-        image_size=(320, 320),
-        num_workers=8,
-        show_data_stats=True,
-        val_set_names=[
-            "pitts30k_val",
-            "msls_val",
-        ],  # pitts30k_val, pitts30k_test, msls_val, nordland, sped
+        shuffle_all=args.shuffle_all,
+        random_sample_from_each_place=args.random_sample_from_each_place,
+        image_size=args.image_size,
+        num_workers=args.num_workers,
+        show_data_stats=args.show_data_stats,
+        val_set_names=args.val_set_names,
     )
 
     # examples of backbones
@@ -280,10 +286,10 @@ if __name__ == "__main__":
     model = VPRModel(
         # -------------------------------
         # ---- Backbone architecture ----
-        backbone_arch="resnet18",
-        pretrained=True,
-        layers_to_freeze=2,
-        layers_to_crop=[],  # 4 crops the last resnet layer, 3 crops the 3rd, ...etc
+        backbone_arch=args.backbone_arch.value,
+        pretrained=args.pretrained,
+        layers_to_freeze=args.layers_to_freeze,
+        layers_to_crop=args.layers_to_crop,  # 4 crops the last resnet layer, 3 crops the 3rd, ...etc
         # ---------------------
         # ---- Aggregator -----
         # agg_arch='CosPlace',
@@ -291,58 +297,57 @@ if __name__ == "__main__":
         #             'out_dim': 512},
         # agg_arch='GeM',
         # agg_config={'p': 3},
-        agg_arch="ConvAP",
-        agg_config={"in_channels": 2048, "out_channels": 1024, "s1": 2, "s2": 2},
+        agg_arch=args.agg_arch,
+        agg_config=args.agg_config,
         # -----------------------------------
         # ---- Training hyperparameters -----
         #
-        lr=0.0002,  # 0.03 for sgd
-        optimizer="adam",  # sgd, adam or adamw
-        weight_decay=0,  # 0.001 for sgd or 0.0 for adam
-        momentum=0.9,
-        warmpup_steps=600,
-        milestones=[5, 10, 15, 25],
-        lr_mult=0.3,
+        lr=args.lr,  # 0.03 for sgd
+        optimizer=args.optimizer.value,  # sgd, adam or adamw
+        weight_decay=args.weight_decay,  # 0.001 for sgd or 0.0 for adam
+        momentum=args.momentum,
+        warmup_steps=args.warmup_steps,
+        milestones=args.milestones,
+        lr_mult=args.lr_mult,
         # ---------------------------------
         # ---- Training loss function -----
         # see utils.losses.py for more losses
         # example: ContrastiveLoss, TripletMarginLoss, MultiSimilarityLoss,
         # FastAPLoss, CircleLoss, SupConLoss,
         #
-        loss_name="MultiSimilarityLoss",
-        miner_name="MultiSimilarityMiner",  # example: TripletMarginMiner, MultiSimilarityMiner, PairMarginMiner
-        miner_margin=0.1,
-        faiss_gpu=False,
+        loss_name=args.loss_name.value,  # example: MultiSimilarityLoss
+        miner_name=args.miner_name,  # example: TripletMarginMiner, MultiSimilarityMiner, PairMarginMiner
+        miner_margin=args.miner_margin,
+        faiss_gpu=args.faiss_gpu,
     )
 
     # model params saving using Pytorch Lightning
     # we save the best 3 models accoring to Recall@1 on pittsburg val
     checkpoint_cb = ModelCheckpoint(
-        monitor="pitts30k_val/R1",
-        filename=f"{model.encoder_arch}"
-        + "_epoch({epoch:02d})_step({step:04d})_R1[{pitts30k_val/R1:.4f}]_R5[{pitts30k_val/R5:.4f}]",
-        auto_insert_metric_name=False,
-        save_weights_only=True,
-        save_top_k=3,
-        mode="max",
+        monitor=args.monitor,
+        filename=args.filename,
+        auto_insert_metric_name=args.auto_insert_metric_name,
+        save_weights_only=args.save_weights_only,
+        save_top_k=args.save_top_k,
+        mode=args.mode,
     )
 
     # ------------------
     # we instanciate a trainer
     trainer = pl.Trainer(
-        accelerator="gpu",
-        devices=[0],
-        default_root_dir=f"./LOGS/{model.encoder_arch}",  # Tensorflow can be used to viz
-        num_sanity_val_steps=0,  # runs N validation steps before stating training
-        precision=16,  # we use half precision to reduce  memory usage (and 2x speed on RTX)
-        max_epochs=30,
-        check_val_every_n_epoch=1,  # run validation every epoch
+        accelerator=args.accelerator,
+        devices=args.devices,
+        default_root_dir=args.default_root_dir,  # Tensorflow can be used to viz
+        num_sanity_val_steps=args.num_sanity_val_steps,  # runs N validation steps before stating training
+        precision=args.precision,  # we use half precision to reduce  memory usage (and 2x speed on RTX)
+        max_epochs=args.max_epochs,
+        check_val_every_n_epoch=args.check_val_every_n_epoch,  # run validation every epoch
+        reload_dataloaders_every_n_epochs=args.reload_dataloaders_every_n_epochs,  # we reload the dataset to shuffle the order
+        log_every_n_steps=args.log_every_n_steps,  # log every n steps,
+        fast_dev_run=args.fast_dev_run,  # comment if you want to start training the network and saving checkpoints
         callbacks=[
             checkpoint_cb
         ],  # we run the checkpointing callback (you can add more)
-        reload_dataloaders_every_n_epochs=1,  # we reload the dataset to shuffle the order
-        log_every_n_steps=20,
-        fast_dev_run=True,  # comment if you want to start training the network and saving checkpoints
     )
 
     # we call the trainer, and give it the model and the datamodule
