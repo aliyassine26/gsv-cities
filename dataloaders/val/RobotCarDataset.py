@@ -2,6 +2,11 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset
+import sys
+
+MAIN_PATH = Path(__file__).resolve().parent.parent.parent / "utils"
+sys.path.append(str(MAIN_PATH))
+from config import GT_ROOT, ROBOTCAR_PATH
 
 # NOTE: you need to download the Nordland dataset from  https://surfdrive.surf.nl/files/index.php/s/sbZRXzYe3l0v67W
 # this link is shared and maintained by the authors of VPR_Bench: https://github.com/MubarizZaffar/VPR-Bench
@@ -9,8 +14,8 @@ from torch.utils.data import Dataset
 # I hardcoded the image names and ground truth for faster evaluation
 # performance is exactly the same as if you use VPR-Bench.
 
-DATASET_ROOT = "/Users/hadiibrahim/Dev/POLITO/gsv-cities/datasets/robotcar_dataset"
-GT_ROOT = "/Users/hadiibrahim/Dev/POLITO/gsv-cities/datasets/"  # BECAREFUL, this is the ground truth that comes with GSV-Cities
+DATASET_ROOT = ROBOTCAR_PATH
+
 
 path_obj = Path(DATASET_ROOT)
 if not path_obj.exists():
