@@ -163,10 +163,14 @@ cython_debug/
 
 # Database
 data/
-datasets/
+datasets/sf_xs_dataset
+datasets/tokyo_xs_dataset
+datasets/robotcar_dataset
+
 
 # Ignore all .db files
 *.db
 
 LOGS
 
+.DS_Store

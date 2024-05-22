@@ -18,7 +18,7 @@ if not path_obj.exists():
         f"Please make sure the path {DATASET_ROOT} to SF XS dataset is correct"
     )
 
-if not path_obj.joinpath("ref") or not path_obj.joinpath("query"):
+if not path_obj.joinpath("database") or not path_obj.joinpath("queries"):
     raise Exception(
         f"Please make sure the directories query and ref are situated in the directory {DATASET_ROOT}"
     )
@@ -31,16 +31,16 @@ class SFXSDataset(Dataset):
 
         self.input_transform = input_transform
 
-        # reference images names
+        # reference images namesf
         self.dbImages = np.load(GT_ROOT + f"SF_XS/{which_ds}_dbImages.npy")
 
         # query images names
         self.qImages = np.load(GT_ROOT + f"SF_XS/{which_ds}_qImages.npy")
 
         # ground truth
-        # self.ground_truth = np.load(
-        #     GT_ROOT + f"SF_XS/{which_ds}_gt.npy", allow_pickle=True
-        # )
+        self.ground_truth = np.load(
+            GT_ROOT + f"SF_XS/{which_ds}_gtImages.npy", allow_pickle=True
+        )
 
         # reference images then query images
         self.images = np.concatenate((self.dbImages, self.qImages))
@@ -61,5 +61,7 @@ class SFXSDataset(Dataset):
 
 
 if __name__ == "__main__":
-    dataset = SFXSDataset()
-    print(dataset.dbImages)
+    dataset = SFXSDataset("sfxs_val")
+    print(len(dataset.dbImages))
+    print(len(dataset.qImages))
+    print(len(dataset.ground_truth))

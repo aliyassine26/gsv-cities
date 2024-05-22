@@ -9,8 +9,8 @@ from torch.utils.data import Dataset
 # I hardcoded the image names and ground truth for faster evaluation
 # performance is exactly the same as if you use VPR-Bench.
 
-DATASET_ROOT = "/home/USER/work/VPR-Bench/datasets/tokyo_xs/"
-GT_ROOT = "/home/USER/work/gsv-cities/datasets/"  # BECAREFUL, this is the ground truth that comes with GSV-Cities
+DATASET_ROOT = "/Users/hadiibrahim/Dev/POLITO/gsv-cities/datasets/tokyo_xs_dataset/"
+GT_ROOT = "/Users/hadiibrahim/Dev/POLITO/gsv-cities/datasets/"
 
 path_obj = Path(DATASET_ROOT)
 if not path_obj.exists():
@@ -18,7 +18,7 @@ if not path_obj.exists():
         f"Please make sure the path {DATASET_ROOT} to Tokyo XS dataset is correct"
     )
 
-if not path_obj.joinpath("ref") or not path_obj.joinpath("query"):
+if not path_obj.joinpath("database") or not path_obj.joinpath("queries"):
     raise Exception(
         f"Please make sure the directories query and ref are situated in the directory {DATASET_ROOT}"
     )
@@ -37,7 +37,7 @@ class TokyoXSDataset(Dataset):
 
         # ground truth
         self.ground_truth = np.load(
-            GT_ROOT + "Tokyo_XS/tokyoxs_gt.npy", allow_pickle=True
+            GT_ROOT + "Tokyo_XS/tokyoxs_test_gtImages.npy", allow_pickle=True
         )
 
         # reference images then query images
@@ -56,3 +56,10 @@ class TokyoXSDataset(Dataset):
 
     def __len__(self):
         return len(self.images)
+
+
+if __name__ == "__main__":
+    dataset = TokyoXSDataset()
+    print(len(dataset.dbImages))
+    print(len(dataset.qImages))
+    print(len(dataset.ground_truth))
