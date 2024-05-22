@@ -2,6 +2,11 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset
+import sys
+
+MAIN_PATH = Path(__file__).resolve().parent.parent.parent / "utils"
+sys.path.append(str(MAIN_PATH))
+from config import GT_ROOT, SF_XS_PATH
 
 # NOTE: you need to download the Nordland dataset from  https://surfdrive.surf.nl/files/index.php/s/sbZRXzYe3l0v67W
 # this link is shared and maintained by the authors of VPR_Bench: https://github.com/MubarizZaffar/VPR-Bench
@@ -9,8 +14,7 @@ from torch.utils.data import Dataset
 # I hardcoded the image names and ground truth for faster evaluation
 # performance is exactly the same as if you use VPR-Bench.
 
-DATASET_ROOT = "/Users/hadiibrahim/Dev/POLITO/gsv-cities/datasets/sf_xs_dataset/"
-GT_ROOT = "/Users/hadiibrahim/Dev/POLITO/gsv-cities/datasets/"  # BECAREFUL, this is the ground truth that comes with GSV-Cities
+DATASET_ROOT = SF_XS_PATH
 
 path_obj = Path(DATASET_ROOT)
 if not path_obj.exists():
@@ -18,7 +22,7 @@ if not path_obj.exists():
         f"Please make sure the path {DATASET_ROOT} to SF XS dataset is correct"
     )
 
-if not path_obj.joinpath("ref") or not path_obj.joinpath("query"):
+if not path_obj.joinpath("database") or not path_obj.joinpath("queries"):
     raise Exception(
         f"Please make sure the directories query and ref are situated in the directory {DATASET_ROOT}"
     )
@@ -31,16 +35,16 @@ class SFXSDataset(Dataset):
 
         self.input_transform = input_transform
 
-        # reference images names
+        # reference images namesf
         self.dbImages = np.load(GT_ROOT + f"SF_XS/{which_ds}_dbImages.npy")
 
         # query images names
         self.qImages = np.load(GT_ROOT + f"SF_XS/{which_ds}_qImages.npy")
 
         # ground truth
-        # self.ground_truth = np.load(
-        #     GT_ROOT + f"SF_XS/{which_ds}_gt.npy", allow_pickle=True
-        # )
+        self.ground_truth = np.load(
+            GT_ROOT + f"SF_XS/{which_ds}_gtImages.npy", allow_pickle=True
+        )
 
         # reference images then query images
         self.images = np.concatenate((self.dbImages, self.qImages))
@@ -61,5 +65,7 @@ class SFXSDataset(Dataset):
 
 
 if __name__ == "__main__":
-    dataset = SFXSDataset()
-    print(dataset.dbImages)
+    dataset = SFXSDataset("sfxs_test")
+    print(len(dataset.dbImages))
+    print(len(dataset.qImages))
+    print(len(dataset.ground_truth))

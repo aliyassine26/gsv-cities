@@ -35,43 +35,27 @@ class ResNet(nn.Module):
         else:
             weights = None
 
-        if 'swsl' in model_name or 'ssl' in model_name:
-            # These are the semi supervised and weakly semi supervised weights from Facebook
-            self.model = torch.hub.load(
-                'facebookresearch/semi-supervised-ImageNet1K-models', model_name)
+        if 'resnext50' in model_name:
+            self.model = torchvision.models.resnext50_32x4d(
+                weights=weights)
+        elif '18' in model_name:
+            # self.model = torchvision.models.resnet18(pretrained=False)
+            self.model = torchvision.models.resnet18(weights=weights)
         else:
-            if 'resnext50' in model_name:
-                self.model = torchvision.models.resnext50_32x4d(
-                    weights=weights)
-            elif 'resnet50' in model_name:
-                self.model = torchvision.models.resnet50(weights=weights)
-            elif '101' in model_name:
-                self.model = torchvision.models.resnet101(weights=weights)
-            elif '152' in model_name:
-                self.model = torchvision.models.resnet152(weights=weights)
-            elif '34' in model_name:
-                self.model = torchvision.models.resnet34(weights=weights)
-            elif '18' in model_name:
-                # self.model = torchvision.models.resnet18(pretrained=False)
-                self.model = torchvision.models.resnet18(weights=weights)
-            elif 'wide_resnet50_2' in model_name:
-                self.model = torchvision.models.wide_resnet50_2(
-                    weights=weights)
-            else:
-                raise NotImplementedError(
-                    'Backbone architecture not recognized!')
+            raise NotImplementedError(
+                'Backbone architecture not recognized!')
 
         # freeze only if the model is pretrained
-        if pretrained:
-            if layers_to_freeze >= 0:
-                self.model.conv1.requires_grad_(False)
-                self.model.bn1.requires_grad_(False)
-            if layers_to_freeze >= 1:
-                self.model.layer1.requires_grad_(False)
-            if layers_to_freeze >= 2:
-                self.model.layer2.requires_grad_(False)
-            if layers_to_freeze >= 3:
-                self.model.layer3.requires_grad_(False)
+        # if pretrained:
+        #     if layers_to_freeze >= 0:
+        #         self.model.conv1.requires_grad_(False)
+        #         self.model.bn1.requires_grad_(False)
+        #     if layers_to_freeze >= 1:
+        #         self.model.layer1.requires_grad_(False)
+        #     if layers_to_freeze >= 2:
+        #         self.model.layer2.requires_grad_(False)
+        #     if layers_to_freeze >= 3:
+        #         self.model.layer3.requires_grad_(False)
 
         # remove the avgpool and most importantly the fc layer
         self.model.avgpool = None
@@ -87,6 +71,7 @@ class ResNet(nn.Module):
             out_channels = 512
 
         self.out_channels = out_channels // 2 if self.model.layer4 is None else out_channels
+        # in our case the output is 256
         self.out_channels = self.out_channels // 2 if self.model.layer3 is None else self.out_channels
 
     def forward(self, x):

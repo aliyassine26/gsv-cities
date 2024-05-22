@@ -1,10 +1,10 @@
 import numpy as np
-from . import aggregators
-from . import backbones
+import aggregators
+import backbones
 from torch import nn
 
 
-def get_backbone(backbone_arch: str = 'resnet50',
+def get_backbone(backbone_arch: str = 'resnet18',
                  pretrained: bool = True,
                  layers_to_freeze: int = 2,
                  layers_to_crop: list = []) -> nn.Module:
@@ -66,8 +66,17 @@ def get_aggregator(agg_arch: str = 'ConvAP',
         assert 'in_channels' in agg_config
         return aggregators.ConvAP(**agg_config)
 
+    elif 'mixvpr' in agg_arch.lower():
+        assert 'in_channels' in agg_config
+        assert 'out_channels' in agg_config
+        assert 'in_h' in agg_config
+        assert 'in_w' in agg_config
+        assert 'mix_depth' in agg_config
+        return aggregators.MixVPR(**agg_config)
 
 # -------------------------------------
+
+
 def print_nb_params(m: nn.Module) -> None:
     """Prints the numbe of trainable parameters in the model
 
@@ -84,7 +93,7 @@ def main():
 
     x = torch.randn(1, 3, 224, 224)  # random image
     # backbone = get_backbone(backbone_arch='resnet50')
-    backbone = get_backbone(backbone_arch='resnet50')
+    backbone = get_backbone(backbone_arch='resnet18')
     agg = get_aggregator(
         'cosplace', {'in_dim': backbone.out_channels, 'out_dim': 512})
     # agg = get_aggregator('GeM')
