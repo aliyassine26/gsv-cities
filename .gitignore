@@ -6,6 +6,11 @@ __pycache__/
 # C extensions
 *.so
 
+datasets/robotcar_dataset
+datasets/sfxs_dataset
+datasets/tokyoxs_dataset
+
+
 # Distribution / packaging
 .Python
 build/

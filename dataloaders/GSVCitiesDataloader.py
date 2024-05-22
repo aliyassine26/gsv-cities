@@ -1,14 +1,15 @@
 from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms as T
 from torch.utils.data import Sampler
-from train.GSVCitiesDataset import GSVCitiesDataset
-from val.SFXSDataset import SFXSDataset
-from val.TokyoXSDataset import TokyoXSDataset
+from dataloaders.train.GSVCitiesDataset import GSVCitiesDataset
+from dataloaders.val.SFXSDataset import SFXSDataset
+from dataloaders.val.TokyoXSDataset import TokyoXSDataset
 import typing
 from prettytable import PrettyTable
+import pytorch_lightning as pl
 
-IMAGENET_MEAN_STD = {"mean": [0.485, 0.456,
-                              0.406], "std": [0.229, 0.224, 0.225]}
+
+IMAGENET_MEAN_STD = {"mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225]}
 
 VIT_MEAN_STD = {"mean": [0.5, 0.5, 0.5], "std": [0.5, 0.5, 0.5]}
 
@@ -86,13 +87,12 @@ class GSVCitiesDataModule(pl.LightningDataModule):
         self.std_dataset = mean_std["std"]
         self.random_sample_from_each_place = random_sample_from_each_place
         self.val_set_names = val_set_names
-        self._save_hyperparameters()
+        self.save_hyperparameters()
 
         self.train_transform = T.Compose(
             [
                 T.Resize(image_size, interpolation=T.InterpolationMode.BILINEAR),
-                T.RandAugment(
-                    num_ops=3, interpolation=T.InterpolationMode.BILINEAR),
+                T.RandAugment(num_ops=3, interpolation=T.InterpolationMode.BILINEAR),
                 T.ToTensor(),
                 T.Normalize(mean=self.mean_dataset, std=self.std_dataset),
             ]
@@ -210,11 +210,9 @@ class GSVCitiesDataModule(pl.LightningDataModule):
         table.align["Data"] = "l"
         table.align["Value"] = "l"
         table.header = False
+        table.add_row(["Batch size (PxK)", f"{self.batch_size}x{self.img_per_place}"])
         table.add_row(
-            ["Batch size (PxK)", f"{self.batch_size}x{self.img_per_place}"])
-        table.add_row(
-            ["# of iterations",
-                f"{self.train_dataset.__len__() // self.batch_size}"]
+            ["# of iterations", f"{self.train_dataset.__len__() // self.batch_size}"]
         )
         table.add_row(["Image size", f"{self.image_size}"])
         print(table.get_string(title="Training config"))
