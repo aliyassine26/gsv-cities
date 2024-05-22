@@ -8,7 +8,7 @@ from torch.utils import data
 import numpy as np
 import torchvision.transforms as tvf
 from tqdm import tqdm
-import cv2
+import cv2  # type: ignore
 
 from main import VPRModel
 
