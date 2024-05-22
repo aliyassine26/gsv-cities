@@ -1,17 +1,14 @@
-import pytorch_lightning as pl
 from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms as T
 from torch.utils.data import Sampler
 from train.GSVCitiesDataset import GSVCitiesDataset
-from val.PittsburghDataset import PittsburghDataset
-from val.MapillaryDataset import MSLS
-from val.NordlandDataset import NordlandDataset
-from val.SPEDDataset import SPEDDataset
+from val.SFXSDataset import SFXSDataset
+from val.TokyoXSDataset import TokyoXSDataset
 import typing
-
 from prettytable import PrettyTable
 
-IMAGENET_MEAN_STD = {"mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225]}
+IMAGENET_MEAN_STD = {"mean": [0.485, 0.456,
+                              0.406], "std": [0.229, 0.224, 0.225]}
 
 VIT_MEAN_STD = {"mean": [0.5, 0.5, 0.5], "std": [0.5, 0.5, 0.5]}
 
@@ -56,7 +53,7 @@ class GSVCitiesDataModule(pl.LightningDataModule):
         mean_std: dict = IMAGENET_MEAN_STD,
         batch_sampler: Sampler = None,
         random_sample_from_each_place: bool = True,
-        val_set_names: list = ["pitts30k_val", "msls_val"],
+        val_set_names: list = ["sfxs_val"],
     ):
         """
         Initializes the data loader with the specified parameters.
@@ -89,12 +86,13 @@ class GSVCitiesDataModule(pl.LightningDataModule):
         self.std_dataset = mean_std["std"]
         self.random_sample_from_each_place = random_sample_from_each_place
         self.val_set_names = val_set_names
-        self.save_hyperparameters()  # save hyperparameter with Pytorch Lightening
+        self._save_hyperparameters()
 
         self.train_transform = T.Compose(
             [
                 T.Resize(image_size, interpolation=T.InterpolationMode.BILINEAR),
-                T.RandAugment(num_ops=3, interpolation=T.InterpolationMode.BILINEAR),
+                T.RandAugment(
+                    num_ops=3, interpolation=T.InterpolationMode.BILINEAR),
                 T.ToTensor(),
                 T.Normalize(mean=self.mean_dataset, std=self.std_dataset),
             ]
@@ -127,36 +125,20 @@ class GSVCitiesDataModule(pl.LightningDataModule):
     def setup(self, stage) -> None:
         """
         Setup function to prepare the data loaders and validation sets based on the stage.
-
-        Parameters:
-        - stage (str): The stage for which setup is being performed ('fit' in this case).
-
-        Returns:
-        - None
         """
         if stage == "fit":
             # load train dataloader with reload routine
             self.reload()
 
-            # load validation sets (pitts_val, msls_val, ...etc)
+            # load validation sets
             self.val_datasets = []
             for valid_set_name in self.val_set_names:
-                if "pitts30k" in valid_set_name.lower():
+                if "sfxs" in valid_set_name.lower():
                     self.val_datasets.append(
-                        PittsburghDataset(
+                        SFXSDataset(
                             which_ds=valid_set_name,
                             input_transform=self.valid_transform,
                         )
-                    )
-                elif valid_set_name.lower() == "msls_val":
-                    self.val_datasets.append(MSLS(input_transform=self.valid_transform))
-                elif valid_set_name.lower() == "nordland":
-                    self.val_datasets.append(
-                        NordlandDataset(input_transform=self.valid_transform)
-                    )
-                elif valid_set_name.lower() == "sped":
-                    self.val_datasets.append(
-                        SPEDDataset(input_transform=self.valid_transform)
                     )
                 else:
                     print(
@@ -166,18 +148,10 @@ class GSVCitiesDataModule(pl.LightningDataModule):
             if self.show_data_stats:
                 self.print_stats()
 
-    def reload(self):
+    def reload(self) -> None:
         """
         Reloads the dataset for training with the specified parameters.
-
-        Parameters:
-            self: the instance of the class
-                The current instance of the class.
-
-        Returns:
-            None
         """
-
         self.train_dataset = GSVCitiesDataset(
             cities=self.cities,
             img_per_place=self.img_per_place,
@@ -189,14 +163,11 @@ class GSVCitiesDataModule(pl.LightningDataModule):
     def train_dataloader(self) -> DataLoader:
         """
         Generate the training data loader for the model.
-        No parameters are needed.
-        Returns a DataLoader object with the training dataset and loader configuration.
         """
-
         self.reload()
         return DataLoader(dataset=self.train_dataset, **self.train_loader_config)
 
-    def val_dataloader(self) -> typing.List[DataLoader]:
+    def val_dataloader(self) -> list[DataLoader]:
         """
         Generate a validation dataloader for each validation dataset using the specified configuration.
         """
@@ -239,9 +210,11 @@ class GSVCitiesDataModule(pl.LightningDataModule):
         table.align["Data"] = "l"
         table.align["Value"] = "l"
         table.header = False
-        table.add_row(["Batch size (PxK)", f"{self.batch_size}x{self.img_per_place}"])
         table.add_row(
-            ["# of iterations", f"{self.train_dataset.__len__()//self.batch_size}"]
+            ["Batch size (PxK)", f"{self.batch_size}x{self.img_per_place}"])
+        table.add_row(
+            ["# of iterations",
+                f"{self.train_dataset.__len__() // self.batch_size}"]
         )
         table.add_row(["Image size", f"{self.image_size}"])
         print(table.get_string(title="Training config"))

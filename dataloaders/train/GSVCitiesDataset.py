@@ -7,18 +7,27 @@ from pathlib import Path
 MAIN_PATH = Path(__file__).resolve().parent.parent.parent / "utils"
 sys.path.append(str(MAIN_PATH))
 
-import pandas as pd
-import random
-import matplotlib.pyplot as plt
-import torch
-from torch.utils.data import Dataset, DataLoader
-from PIL import Image
-import typing
+from config import GSV_CITIES_PATH, DF_PATH # type: ignore
 from torchvision import transforms as T
-from config import GSV_CITIES_PATH, DF_PATH
+import typing
+from PIL import Image
+from torch.utils.data import Dataset, DataLoader
+import torch
+import matplotlib.pyplot as plt
+import random
+import pandas as pd
 
+def show_image(image: str, title: str) -> None:
+    """
+    Display an image with a given title.
 
-def show_image(image, title):
+    Parameters:
+        image (numpy.ndarray): The image to be displayed.
+        title (str): The title of the image.
+
+    Returns:
+        None
+    """
     plt.imshow(image)
     plt.title(title)
     plt.axis("off")
@@ -56,7 +65,13 @@ class GSVBaseDataset(Dataset):
         self.main_df = pd.concat(list(self.dataframes.values()), axis=0)
         self.total_nb_images = len(self.main_df)
 
-    def __get_dataframes(self):
+    def __get_dataframes(self) -> dict:
+        """
+        Get a dictionary of dataframes for each city in the dataframes directory.
+
+        Returns:
+            dict: A dictionary where the keys are the city names and the values are the corresponding dataframes.
+        """
         dataframes = {}
         for city in os.listdir(self.dataframes_dir):
             if city.endswith(".csv"):
@@ -64,31 +79,83 @@ class GSVBaseDataset(Dataset):
                 dataframes[city] = df
         return dataframes
 
-    def get_dataframes_list(self):
+    def get_dataframes_list(self) -> list:
+        """
+        Get a list of dataframes from the `self.dataframes` dictionary.
+
+        Returns:
+            list: A list of dataframes.
+        """
         return list(self.dataframes.values())
 
-    def get_dataframe(self, city):
+    def get_dataframe(self, city) -> pd.DataFrame:
+        """
+        Get the dataframe corresponding to the given city.
+
+        Args:
+            city (str): The name of the city.
+
+        Returns:
+            pd.DataFrame: The dataframe for the given city.
+        """
         return self.dataframes[city]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return sum(list(v.shape[0] for k, v in self.dataframes.items()))
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> typing.Tuple[str, str, float, float, Image.Image]:
+        """
+        Get an item from the dataset at the given index.
+
+        Args:
+            idx (int): The index of the item to retrieve.
+
+        Returns:
+            Tuple[str, str, float, float, Image.Image]: A tuple containing the place ID, class name, UTM x-coordinate, UTM y-coordinate, and the image.
+        """
         place_id, class_name, UTMx, UTMy,  img_path = self.main_df.iloc[idx]
         image = Image.open(os.path.join(
             self.root_dir, class_name.lower(), img_path)).convert('RGB')
         if self.transform:
             image = self.transform(image)
-        return place_id, class_name, UTMx, UTMy , image
+        return place_id, class_name, UTMx, UTMy, image
 
-    def show_random_images(self, n=4):
+    def show_random_images(self, n=4) -> None:
+        """
+        Display random images from the dataset.
+
+        This function randomly selects `n` images from the dataset and displays them.
+        The images are displayed with their corresponding place ID, class name, and coordinates.
+
+        Parameters:
+            n (int, optional): The number of images to display. Defaults to 4.
+
+        Returns:
+            None
+        """
         for i in range(n):
             idx = random.randint(0, self.main_df.shape[0])
             place_id, class_name, UTMx, UTMy, image = self.__getitem__(idx)
             show_image(image.permute(1, 2, 0),
                        f'Place ID: {place_id}, Class: {class_name}, Coordinates: {(UTMx, UTMy)}')
 
-    def show_random_images_by_city(self, class_name, n=4):
+    def show_random_images_by_city(self, class_name, n=4) -> None:
+        """
+        Display random images from a specific city.
+
+        This function randomly selects `n` images from the dataset for a given city and displays them.
+        The images are displayed with their corresponding place ID, class name, and coordinates.
+
+        Parameters:
+            class_name (str): The name of the city.
+            n (int, optional): The number of images to display. Defaults to 4.
+
+        Raises:
+            ValueError: If the city has less than `n` images.
+
+        Returns:
+            None
+        """
         class_df = self.main_df[self.main_df["class_name"] == class_name]
         if class_df.shape[0] < n:
             raise ValueError(
@@ -100,7 +167,24 @@ class GSVBaseDataset(Dataset):
             show_image(image.permute(1, 2, 0),
                        f'Place ID: {place_id}, Class: {class_name}, Coordinates: {(UTMx, UTMy)}')
 
-    def show_random_images_by_place(self, place_id, class_name, n=4):
+    def show_random_images_by_place(self, place_id, class_name, n=4) -> None:
+        """
+        Display random images from a specific place.
+
+        This function randomly selects `n` images from the dataset for a given place and displays them.
+        The images are displayed with their corresponding place ID, class name, and coordinates.
+
+        Parameters:
+            place_id (int): The ID of the place.
+            class_name (str): The name of the class.
+            n (int, optional): The number of images to display. Defaults to 4.
+
+        Raises:
+            ValueError: If the place has less than `n` images.
+
+        Returns:
+            None
+        """
         place_df = self.main_df[
             (self.main_df["place_id"] == place_id)
             & (self.main_df["class_name"] == class_name)
@@ -115,7 +199,7 @@ class GSVBaseDataset(Dataset):
             show_image(image.permute(1, 2, 0),
                        f'Place ID: {place_id}, Class: {class_name}, Coordinates: {(UTMx, UTMy)}')
 
-    def save_main_df(self, path):
+    def save_main_df(self, path) -> None:
         self.main_df.to_csv(path, index=False)
 
 
@@ -166,22 +250,24 @@ class GSVCitiesDataset(GSVBaseDataset):
         self.dfs = self.get_dataframes_list()
         self.dataframe = self.__getdataframes()
 
-        # place_ids is a list of lists, each list contains the UNIQUE place_ids of a city
+        # place_ids is a list, where each element is a UNIQUE place_id of a city
         self.places_ids = pd.unique(self.dataframe.index)
         # self.total_nb_images already inherited
         self.total_nb_images = len(self.dataframe)
 
     def __getdataframes(self) -> pd.DataFrame:
         """
-        Return one dataframe containing
-        all info about the images from all cities
+        Return one dataframe containing all information about the images from all cities.
 
-        This requires DataFrame files to be in a folder
-        named Dataframes, containing a DataFrame
-        for each city in self.cities
+        This requires DataFrame files to be in a folder named Dataframes, containing a DataFrame
+        for each city in the list of cities passed to the constructor.
+
+        The returned dataframe is a concatenation of the dataframes for each city,
+        with all duplicate place_ids removed.
         """
         # read the first city dataframe
-        df = pd.read_csv(self.dataframes_dir + f"\\{self.cities[0].lower()}.csv")
+        df = pd.read_csv(self.dataframes_dir +
+                         f"\\{self.cities[0].lower()}.csv")
         df = df.sample(frac=1)  # shuffle the city dataframe
 
         # append other cities one by one
@@ -209,7 +295,7 @@ class GSVCitiesDataset(GSVBaseDataset):
         ]
         return res.set_index("place_id")
 
-    def get_df(self):
+    def get_df(self) -> pd.DataFrame:
         return self.dataframe
 
     def __getitem__(self, index) -> typing.Tuple[torch.Tensor, torch.Tensor]:
@@ -240,7 +326,8 @@ class GSVCitiesDataset(GSVBaseDataset):
         imgs = []
         for i, row in place.iterrows():
             img_path = self.get_img_name(row)
-            img = self.image_loader(os.path.join(self.root_dir, city, img_path))
+            img = self.image_loader(os.path.join(
+                self.root_dir, city, img_path))
 
             if self.transform is not None:
                 img = self.transform(img)
@@ -265,15 +352,6 @@ class GSVCitiesDataset(GSVBaseDataset):
     def get_img_name(row) -> str:
         # given a row from the dataframe
         # return the corresponding image name
-
-        city = row["class_name"]
-
-        # now remove the two digit we added to the id
-        # they are superficially added to make ids different
-        # for different cities
-        # row.name is the index of the row, not to be confused with image name
-        pl_id = row.name % 10**5
-        pl_id = str(pl_id).zfill(7)
 
         img_name = row["filename"]
 
