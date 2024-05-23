@@ -116,7 +116,7 @@ class VPRModel(pl.LightningModule):
         )
         return [optimizer], [scheduler]
 
-    # configure the optizer step, takes into account the warmup stage
+    # configure the optizer step, takes into account the warmpup stage
     # def optimizer_step(
     #     self,
     #     epoch,
@@ -251,10 +251,8 @@ class VPRModel(pl.LightningModule):
             )
             del r_list, q_list, feats, num_references, ground_truth
 
-            self.log(f"{val_set_name}/R1",
-                     recalls_dict[1], prog_bar=False, logger=True)
-            self.log(f"{val_set_name}/R5",
-                     recalls_dict[5], prog_bar=False, logger=True)
+            self.log(f"{val_set_name}/R1", recalls_dict[1], prog_bar=False, logger=True)
+            self.log(f"{val_set_name}/R5", recalls_dict[5], prog_bar=False, logger=True)
             self.log(
                 f"{val_set_name}/R10", recalls_dict[10], prog_bar=False, logger=True
             )
@@ -263,51 +261,51 @@ class VPRModel(pl.LightningModule):
         self.validation_step_outputs.clear()
 
 
-class Args:
-    def __init__(self):
-        # GSVCitiesDataModule parameters
-        self.batch_size = 32
-        self.img_per_place = 4
-        self.min_img_per_place = 4
-        self.shuffle_all = False
-        self.random_sample_from_each_place = True
-        self.image_size = (320, 320)
-        self.num_workers = 8
-        self.show_data_stats = True
-        self.val_set_names = ["sfxs_val"]
+# class Args:
+#     def __init__(self):
+#         # GSVCitiesDataModule parameters
+#         self.batch_size = 32
+#         self.img_per_place = 4
+#         self.min_img_per_place = 4
+#         self.shuffle_all = False
+#         self.random_sample_from_each_place = True
+#         self.image_size = (320, 320)
+#         self.num_workers = 8
+#         self.show_data_stats = True
+#         self.val_set_names = ["sfxs_val"]
 
-        # VPRModel parameters
-        self.backbone_arch = "resnet18"
-        self.pretrained = True
-        self.layers_to_freeze = 3
-        self.layers_to_crop = [3, 4]
+#         # VPRModel parameters
+#         self.backbone_arch = "resnet18"
+#         self.pretrained = True
+#         self.layers_to_freeze = 3
+#         self.layers_to_crop = [3, 4]
 
-        # self.agg_arch = "ConvAP"
-        # self.agg_config = {"in_channels": 2048,
-        #                    "out_channels": 1024, "s1": 2, "s2": 2}
-        self.agg_arch = "GeM"
-        self.agg_config = {"p": 3}
+#         # self.agg_arch = "ConvAP"
+#         # self.agg_config = {"in_channels": 2048,
+#         #                    "out_channels": 1024, "s1": 2, "s2": 2}
+#         self.agg_arch = "GeM"
+#         self.agg_config = {"p": 3}
 
-        self.lr = 0.0002
-        self.optimizer = "adam"
-        self.weight_decay = 0
-        self.momentum = 0.9
-        self.warmup_steps = 600
-        self.milestones = [5, 10, 15, 25]
-        self.lr_mult = 0.3
+#         self.lr = 0.0002
+#         self.optimizer = "adam"
+#         self.weight_decay = 0
+#         self.momentum = 0.9
+#         self.warmpup_steps = 600
+#         self.milestones = [5, 10, 15, 25]
+#         self.lr_mult = 0.3
 
-        self.loss_name = "MultiSimilarityLoss"
-        self.miner_name = "MultiSimilarityMiner"
-        self.miner_margin = 0.1
-        self.faiss_gpu = False
+#         self.loss_name = "MultiSimilarityLoss"
+#         self.miner_name = "MultiSimilarityMiner"
+#         self.miner_margin = 0.1
+#         self.faiss_gpu = False
 
-        # ModelCheckpoint parameters
-        self.monitor = "sfxx_val/R1"
-        self.filename = f"{self.backbone_arch}_epoch({{epoch:02d}})_step({{step:04d}})_R1[{{pitts30k_val/R1:.4f}}]_R5[{{sfxs_val/R5:.4f}}]"
-        self.auto_insert_metric_name = False
-        self.save_weights_only = True
-        self.save_top_k = 3
-        self.mode = "max"
+#         # ModelCheckpoint parameters
+#         self.monitor = "sfxx_val/R1"
+#         self.filename = f"{self.backbone_arch}_epoch({{epoch:02d}})_step({{step:04d}})_R1[{{pitts30k_val/R1:.4f}}]_R5[{{sfxs_val/R5:.4f}}]"
+#         self.auto_insert_metric_name = False
+#         self.save_weights_only = True
+#         self.save_top_k = 3
+#         self.mode = "max"
 
         # Trainer parameters
         self.accelerator = "cpu"
@@ -323,8 +321,8 @@ class Args:
 
 
 if __name__ == "__main__":
-    # args = get_args()
-    args = Args()
+    args = get_args()
+    # args = Args()
     pl.seed_everything(seed=1, workers=True)
 
     # the datamodule contains train and validation dataloaders,
@@ -374,7 +372,7 @@ if __name__ == "__main__":
         optimizer=args.optimizer,  # sgd, adam or adamw
         weight_decay=args.weight_decay,  # 0.001 for sgd or 0.0 for adam
         momentum=args.momentum,
-        warmpup_steps=args.warmup_steps,
+        warmpup_steps=args.warmpup_steps,
         milestones=args.milestones,
         lr_mult=args.lr_mult,
         # ---------------------------------
