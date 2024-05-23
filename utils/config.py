@@ -1,5 +1,5 @@
 GSV_CITIES_PATH = "datasets/gsv_xs/train/"
-DF_PATH = "datasets/gsv_xs\dataframes/"
+DF_PATH = "datasets/gsv_xs/dataframes/"
 GT_ROOT = "datasets/"
 SF_XS_PATH = "datasets/SF_XS/"
 TOKYO_XS_PATH = "datasets/Tokyo_XS/"
