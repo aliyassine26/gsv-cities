@@ -68,7 +68,7 @@ class VPRModel(pl.LightningModule):
         self.miner_margin = miner_margin
 
         self.save_hyperparameters()  # write hyperparams into a file
-        self.validation_step_outputs
+        self.validation_step_outputs = []
         self.loss_fn = utils.get_loss(loss_name)
         self.miner = utils.get_miner(miner_name, miner_margin)
         self.batch_acc = (

@@ -83,6 +83,9 @@ def get_aggregator(agg_arch: str = "ConvAP", agg_config: dict = {}) -> nn.Module
         assert "mix_depth" in agg_config
         return aggregators.MixVPR(**agg_config)
 
+    elif "avg" in agg_arch.lower():
+        return aggregators.AVG()
+
 
 # -------------------------------------
 
@@ -104,7 +107,8 @@ def main():
     x = torch.randn(1, 3, 224, 224)  # random image
     # backbone = get_backbone(backbone_arch='resnet50')
     backbone = get_backbone(backbone_arch="resnet18")
-    agg = get_aggregator("cosplace", {"in_dim": backbone.out_channels, "out_dim": 512})
+    agg = get_aggregator(
+        "cosplace", {"in_dim": backbone.out_channels, "out_dim": 512})
     # agg = get_aggregator('GeM')
     print_nb_params(backbone)
     print_nb_params(agg)
