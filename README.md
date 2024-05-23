@@ -202,6 +202,10 @@ We can, for example, query the dataset with *only places that are in the norther
 
 *Stay tuned for tutorials in the comming weeks.*
 
+#### Tensorboard
+```tensorboard --logdir D:/Github/gsv-cities/LOGS/resnet18/lightning_logs/version_0```
+
+
 # Cite
 
 Use the following bibtex code to cite our paper

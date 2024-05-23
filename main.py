@@ -315,11 +315,11 @@ class Args:
         self.default_root_dir = f"./LOGS/{self.backbone_arch}"
         self.num_sanity_val_steps = 0
         self.precision = 16
-        self.max_epochs = 30
+        self.max_epochs = 1
         self.check_val_every_n_epoch = 1
         self.reload_dataloaders_every_n_epochs = 1
-        self.log_every_n_steps = 20
-        self.fast_dev_run = True
+        self.log_every_n_steps = 1
+        self.fast_dev_run = False
 
 
 if __name__ == "__main__":
