@@ -10,6 +10,10 @@ from models import helper
 from src.configs.args import parse_args
 from argparse import Namespace
 
+import yaml
+import wandb 
+from pytorch_lightning.loggers import WandbLogger
+
 
 def get_args() -> Namespace:
     parser = parse_args()
@@ -316,14 +320,30 @@ class VPRModel(pl.LightningModule):
 #         self.max_epochs = 30
 #         self.check_val_every_n_epoch = 1
 #         self.reload_dataloaders_every_n_epochs = 1
-#         self.log_every_n_steps = 20
+#         self.log_every_n_steps = 1
 #         self.fast_dev_run = True
 
 
 if __name__ == "__main__":
     args = get_args()
     # args = Args()
+    
     pl.seed_everything(seed=1, workers=True)
+
+    # Load the configuration file
+    with open('./src/configs/secret.yml', 'r') as f:
+        config = yaml.safe_load(f)
+
+    # Ensure the API key is in the config
+    if 'WANDB_API_KEY' not in config:
+        raise KeyError("WANDB_API_KEY not found in the configuration file")
+    
+    wandb_api_key = config['WANDB_API_KEY']
+    # Log in to wandb with the API key
+    wandb.login(key=wandb_api_key)
+
+    # Initializing wandb with the project name
+    wandb_logger = WandbLogger(project="visual_place_recognition")
 
     # the datamodule contains train and validation dataloaders,
     # refer to ./dataloader/GSVCitiesDataloader.py for details
@@ -402,6 +422,7 @@ if __name__ == "__main__":
     # ------------------
     # we instanciate a trainer
     trainer = pl.Trainer(
+        logger=wandb_logger,
         accelerator=args.accelerator,
         devices=args.devices,
         default_root_dir=args.default_root_dir,  # Tensorflow can be used to viz
@@ -420,6 +441,9 @@ if __name__ == "__main__":
             checkpoint_cb
         ],  # we run the checkpointing callback (you can add more)
     )
+    
+    # log the hyperparameters to wandb
+    wandb_logger.experiment.config.update(model.hparams)
 
     # we call the trainer, and give it the model and the datamodule
     # now you see the modularity of Pytorch Lighning?

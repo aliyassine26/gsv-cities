@@ -172,5 +172,10 @@ data/
 # Ignore all .db files
 *.db
 
+# Ignore all log files
 LOGS
+/wandb
+
+# Ignore secret yaml files
+secret.yml
 
