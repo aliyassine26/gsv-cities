@@ -167,7 +167,8 @@ cython_debug/
 # Database
 data/
 /datasets/gsv_xs/train/
-
+/datasets/sfxs_dataset/
+/datasets/sf_xs_dataset/
 # Ignore all .db files
 *.db
 

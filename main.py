@@ -25,10 +25,10 @@ class VPRModel(pl.LightningModule):
     def __init__(
         self,
         # ---- Backbone
-        backbone_arch="resnet50",
+        backbone_arch="resnet18",
         pretrained=True,
-        layers_to_freeze=1,
-        layers_to_crop=[],
+        layers_to_freeze=3,
+        layers_to_crop=[3, 4],
         # ---- Aggregator
         agg_arch="ConvAP",  # CosPlace, NetVLAD, GeM, AVG
         agg_config={},
@@ -68,7 +68,7 @@ class VPRModel(pl.LightningModule):
         self.miner_margin = miner_margin
 
         self.save_hyperparameters()  # write hyperparams into a file
-
+        self.validation_step_outputs
         self.loss_fn = utils.get_loss(loss_name)
         self.miner = utils.get_miner(miner_name, miner_margin)
         self.batch_acc = (
@@ -117,25 +117,25 @@ class VPRModel(pl.LightningModule):
         return [optimizer], [scheduler]
 
     # configure the optizer step, takes into account the warmup stage
-    def optimizer_step(
-        self,
-        epoch,
-        batch_idx,
-        optimizer,
-        optimizer_idx,
-        optimizer_closure,
-        on_tpu,
-        using_native_amp,
-        using_lbfgs,
-    ):
-        # warm up lr
-        if self.trainer.global_step < self.warmpup_steps:
-            lr_scale = min(
-                1.0, float(self.trainer.global_step + 1) / self.warmpup_steps
-            )
-            for pg in optimizer.param_groups:
-                pg["lr"] = lr_scale * self.lr
-        optimizer.step(closure=optimizer_closure)
+    # def optimizer_step(
+    #     self,
+    #     epoch,
+    #     batch_idx,
+    #     optimizer,
+    #     optimizer_idx,
+    #     optimizer_closure,
+    #     on_tpu,
+    #     using_native_amp,
+    #     using_lbfgs,
+    # ):
+    #     # warm up lr
+    #     if self.trainer.global_step < self.warmpup_steps:
+    #         lr_scale = min(
+    #             1.0, float(self.trainer.global_step + 1) / self.warmpup_steps
+    #         )
+    #         for pg in optimizer.param_groups:
+    #             pg["lr"] = lr_scale * self.lr
+    #     optimizer.step(closure=optimizer_closure)
 
     #  The loss function call (this method will be called at each training iteration)
     def loss_function(self, descriptors, labels):
@@ -206,9 +206,10 @@ class VPRModel(pl.LightningModule):
         places, _ = batch
         # calculate descriptors
         descriptors = self(places)
+        self.validation_step_outputs.append(descriptors.detach().cpu())
         return descriptors.detach().cpu()
 
-    def on_validation_epoch_end(self, val_step_outputs):
+    def on_validation_epoch_end(self):
         """at the end of each validation epoch
         descriptors are returned in their order
         depending on how the validation dataset is implemented
@@ -219,6 +220,7 @@ class VPRModel(pl.LightningModule):
         we then split it to references=[R1, R2, ..., Rn] and queries=[Q1, Q2, ..., Qm]
         to calculate recall@K using the ground truth provided.
         """
+        val_step_outputs = self.val_step_outputs
         dm = self.trainer.datamodule
         # The following line is a hack: if we have only one validation set, then
         # we need to put the outputs in a list (Pytorch Lightning does not do it presently)
@@ -249,18 +251,22 @@ class VPRModel(pl.LightningModule):
             )
             del r_list, q_list, feats, num_references, ground_truth
 
-            self.log(f"{val_set_name}/R1", recalls_dict[1], prog_bar=False, logger=True)
-            self.log(f"{val_set_name}/R5", recalls_dict[5], prog_bar=False, logger=True)
+            self.log(f"{val_set_name}/R1",
+                     recalls_dict[1], prog_bar=False, logger=True)
+            self.log(f"{val_set_name}/R5",
+                     recalls_dict[5], prog_bar=False, logger=True)
             self.log(
                 f"{val_set_name}/R10", recalls_dict[10], prog_bar=False, logger=True
             )
         print("\n\n")
 
+        self.validation_step_outputs.clear()
+
 
 class Args:
     def __init__(self):
         # GSVCitiesDataModule parameters
-        self.batch_size = 100
+        self.batch_size = 32
         self.img_per_place = 4
         self.min_img_per_place = 4
         self.shuffle_all = False
@@ -273,11 +279,14 @@ class Args:
         # VPRModel parameters
         self.backbone_arch = "resnet18"
         self.pretrained = True
-        self.layers_to_freeze = 2
-        self.layers_to_crop = []
+        self.layers_to_freeze = 3
+        self.layers_to_crop = [3, 4]
 
-        self.agg_arch = "ConvAP"
-        self.agg_config = {"in_channels": 2048, "out_channels": 1024, "s1": 2, "s2": 2}
+        # self.agg_arch = "ConvAP"
+        # self.agg_config = {"in_channels": 2048,
+        #                    "out_channels": 1024, "s1": 2, "s2": 2}
+        self.agg_arch = "GeM"
+        self.agg_config = {"p": 3}
 
         self.lr = 0.0002
         self.optimizer = "adam"
@@ -326,7 +335,8 @@ if __name__ == "__main__":
         batch_size=args.batch_size,
         img_per_place=args.img_per_place,
         min_img_per_place=args.min_img_per_place,
-        cities=["London"],  # you can sppecify cities here or in GSVCitiesDataloader.py
+        # you can sppecify cities here or in GSVCitiesDataloader.py
+        cities=["Londonn"],
         shuffle_all=args.shuffle_all,
         random_sample_from_each_place=args.random_sample_from_each_place,
         image_size=args.image_size,
@@ -346,7 +356,8 @@ if __name__ == "__main__":
         backbone_arch=args.backbone_arch,
         pretrained=args.pretrained,
         layers_to_freeze=args.layers_to_freeze,
-        layers_to_crop=args.layers_to_crop,  # 4 crops the last resnet layer, 3 crops the 3rd, ...etc
+        # 4 crops the last resnet layer, 3 crops the 3rd, ...etc
+        layers_to_crop=args.layers_to_crop,
         # ---------------------
         # ---- Aggregator -----
         # agg_arch='CosPlace',
@@ -373,7 +384,8 @@ if __name__ == "__main__":
         # FastAPLoss, CircleLoss, SupConLoss,
         #
         loss_name=args.loss_name,  # example: MultiSimilarityLoss
-        miner_name=args.miner_name,  # example: TripletMarginMiner, MultiSimilarityMiner, PairMarginMiner
+        # example: TripletMarginMiner, MultiSimilarityMiner, PairMarginMiner
+        miner_name=args.miner_name,
         miner_margin=args.miner_margin,
         faiss_gpu=args.faiss_gpu,
     )
@@ -395,13 +407,17 @@ if __name__ == "__main__":
         accelerator=args.accelerator,
         devices=args.devices,
         default_root_dir=args.default_root_dir,  # Tensorflow can be used to viz
-        num_sanity_val_steps=args.num_sanity_val_steps,  # runs N validation steps before stating training
-        precision=args.precision,  # we use half precision to reduce  memory usage (and 2x speed on RTX)
+        # runs N validation steps before stating training
+        num_sanity_val_steps=args.num_sanity_val_steps,
+        # we use half precision to reduce  memory usage (and 2x speed on RTX)
+        precision=args.precision,
         max_epochs=args.max_epochs,
         check_val_every_n_epoch=args.check_val_every_n_epoch,  # run validation every epoch
-        reload_dataloaders_every_n_epochs=args.reload_dataloaders_every_n_epochs,  # we reload the dataset to shuffle the order
+        # we reload the dataset to shuffle the order
+        reload_dataloaders_every_n_epochs=args.reload_dataloaders_every_n_epochs,
         log_every_n_steps=args.log_every_n_steps,  # log every n steps,
-        fast_dev_run=args.fast_dev_run,  # comment if you want to start training the network and saving checkpoints
+        # comment if you want to start training the network and saving checkpoints
+        fast_dev_run=args.fast_dev_run,
         callbacks=[
             checkpoint_cb
         ],  # we run the checkpointing callback (you can add more)
