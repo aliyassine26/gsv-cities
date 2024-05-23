@@ -7,7 +7,7 @@ from pathlib import Path
 MAIN_PATH = Path(__file__).resolve().parent.parent.parent / "utils"
 sys.path.append(str(MAIN_PATH))
 
-from config import GSV_CITIES_PATH, DF_PATH # type: ignore
+from config import GSV_CITIES_PATH, DF_PATH  # type: ignore
 from torchvision import transforms as T
 import typing
 from PIL import Image
@@ -16,6 +16,7 @@ import torch
 import matplotlib.pyplot as plt
 import random
 import pandas as pd
+
 
 def show_image(image: str, title: str) -> None:
     """
@@ -113,9 +114,10 @@ class GSVBaseDataset(Dataset):
         Returns:
             Tuple[str, str, float, float, Image.Image]: A tuple containing the place ID, class name, UTM x-coordinate, UTM y-coordinate, and the image.
         """
-        place_id, class_name, UTMx, UTMy,  img_path = self.main_df.iloc[idx]
-        image = Image.open(os.path.join(
-            self.root_dir, class_name.lower(), img_path)).convert('RGB')
+        place_id, class_name, UTMx, UTMy, img_path = self.main_df.iloc[idx]
+        image = Image.open(
+            os.path.join(self.root_dir, class_name.lower(), img_path)
+        ).convert("RGB")
         if self.transform:
             image = self.transform(image)
         return place_id, class_name, UTMx, UTMy, image
@@ -136,8 +138,10 @@ class GSVBaseDataset(Dataset):
         for i in range(n):
             idx = random.randint(0, self.main_df.shape[0])
             place_id, class_name, UTMx, UTMy, image = self.__getitem__(idx)
-            show_image(image.permute(1, 2, 0),
-                       f'Place ID: {place_id}, Class: {class_name}, Coordinates: {(UTMx, UTMy)}')
+            show_image(
+                image.permute(1, 2, 0),
+                f"Place ID: {place_id}, Class: {class_name}, Coordinates: {(UTMx, UTMy)}",
+            )
 
     def show_random_images_by_city(self, class_name, n=4) -> None:
         """
@@ -163,9 +167,11 @@ class GSVBaseDataset(Dataset):
             )
         for i in range(n):
             idx = random.randint(0, class_df.shape[0])
-            place_id, class_name, UTMx, UTMy,  image = self.__getitem__(idx)
-            show_image(image.permute(1, 2, 0),
-                       f'Place ID: {place_id}, Class: {class_name}, Coordinates: {(UTMx, UTMy)}')
+            place_id, class_name, UTMx, UTMy, image = self.__getitem__(idx)
+            show_image(
+                image.permute(1, 2, 0),
+                f"Place ID: {place_id}, Class: {class_name}, Coordinates: {(UTMx, UTMy)}",
+            )
 
     def show_random_images_by_place(self, place_id, class_name, n=4) -> None:
         """
@@ -196,8 +202,10 @@ class GSVBaseDataset(Dataset):
         for i in range(n):
             idx = random.randint(0, place_df.shape[0])
             place_id, class_name, UTMx, UTMy, image = self.__getitem__(idx)
-            show_image(image.permute(1, 2, 0),
-                       f'Place ID: {place_id}, Class: {class_name}, Coordinates: {(UTMx, UTMy)}')
+            show_image(
+                image.permute(1, 2, 0),
+                f"Place ID: {place_id}, Class: {class_name}, Coordinates: {(UTMx, UTMy)}",
+            )
 
     def save_main_df(self, path) -> None:
         self.main_df.to_csv(path, index=False)
@@ -266,15 +274,12 @@ class GSVCitiesDataset(GSVBaseDataset):
         with all duplicate place_ids removed.
         """
         # read the first city dataframe
-        df = pd.read_csv(self.dataframes_dir +
-                         f"\\{self.cities[0].lower()}.csv")
+        df = pd.read_csv(self.dataframes_dir + f"/{self.cities[0].lower()}.csv")
         df = df.sample(frac=1)  # shuffle the city dataframe
 
         # append other cities one by one
         for i in range(1, len(self.cities)):
-            tmp_df = pd.read_csv(
-                self.dataframes_dir + f"\\{self.cities[i].lower()}.csv"
-            )
+            tmp_df = pd.read_csv(self.dataframes_dir + f"/{self.cities[i].lower()}.csv")
 
             # Now we add a prefix to place_id, so that we
             # don't confuse, say, place number 13 of NewYork
@@ -326,8 +331,7 @@ class GSVCitiesDataset(GSVBaseDataset):
         imgs = []
         for i, row in place.iterrows():
             img_path = self.get_img_name(row)
-            img = self.image_loader(os.path.join(
-                self.root_dir, city, img_path))
+            img = self.image_loader(os.path.join(self.root_dir, city, img_path))
 
             if self.transform is not None:
                 img = self.transform(img)
@@ -358,6 +362,6 @@ class GSVCitiesDataset(GSVBaseDataset):
         return img_name
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     dataset = GSVBaseDataset()
     dataset.show_random_images(n=2)
