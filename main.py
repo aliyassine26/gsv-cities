@@ -1,5 +1,5 @@
-import pytorch_lightning as pl
 import torch
+import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.optim import lr_scheduler
 import utils
