@@ -11,7 +11,7 @@ from src.configs.args import parse_args
 from argparse import Namespace
 
 import yaml
-import wandb 
+import wandb
 from pytorch_lightning.loggers import WandbLogger
 
 
@@ -34,11 +34,11 @@ class VPRModel(pl.LightningModule):
         layers_to_freeze=3,
         layers_to_crop=[3, 4],
         # ---- Aggregator
-        agg_arch="ConvAP",  # CosPlace, NetVLAD, GeM, AVG
+        agg_arch="AVG",  # CosPlace, NetVLAD, GeM, AVG
         agg_config={},
         # ---- Train hyperparameters
         lr=0.03,
-        optimizer="sgd",
+        optimizer="adamw",
         weight_decay=1e-3,
         momentum=0.9,
         warmpup_steps=500,
@@ -86,7 +86,9 @@ class VPRModel(pl.LightningModule):
         self.backbone = helper.get_backbone(
             backbone_arch, pretrained, layers_to_freeze, layers_to_crop
         )
-        self.aggregator = helper.get_aggregator(agg_arch, agg_config)
+        
+        self.aggregator = helper.get_aggregator(
+            agg_arch, agg_config)  # AVG -> agg_config = {}
 
     # the forward pass of the lightning model
     def forward(self, x):
@@ -196,8 +198,8 @@ class VPRModel(pl.LightningModule):
             descriptors, labels
         )  # Call the loss_function we defined above
 
-        self.log("loss", loss.item(), logger=True)
-        return {"loss": loss}
+        self.log("train_loss", loss.item(), logger=True)
+        return {"train_loss": loss}
 
     # This is called at the end of eatch training epoch
     def on_train_epoch_end(self, training_step_outputs):
@@ -243,7 +245,7 @@ class VPRModel(pl.LightningModule):
             recalls_dict, predictions = utils.get_validation_recalls(r_list=r_list,
                                                                      q_list=q_list,
                                                                      k_values=[
-                                                                         1, 5, 10, 15, 20, 25],
+                                                                         1, 5],
                                                                      gt=ground_truth,
                                                                      print_results=True,
                                                                      dataset_name=val_set_name,
@@ -251,79 +253,124 @@ class VPRModel(pl.LightningModule):
                                                                      )
             del r_list, q_list, feats, num_references, ground_truth
 
-            self.log(f"{val_set_name}/R1", recalls_dict[1], prog_bar=False, logger=True)
-            self.log(f"{val_set_name}/R5", recalls_dict[5], prog_bar=False, logger=True)
+            self.log(f"{val_set_name}/R1",
+                     recalls_dict[1], prog_bar=False, logger=True)
+            self.log(f"{val_set_name}/R5",
+                     recalls_dict[5], prog_bar=False, logger=True)
             self.log(
                 f"{val_set_name}/R10", recalls_dict[10], prog_bar=False, logger=True
             )
+
+        print(predictions)
         print("\n\n")
 
         self.validation_step_outputs.clear()
 
+    def test_step(self, batch, batch_idx):
+        places, _ = batch
+        # calculate descriptors
+        descriptors = self(places)
+        return descriptors.detach().cpu()
 
-# class Args:
-#     def __init__(self):
-#         # GSVCitiesDataModule parameters
-#         self.batch_size = 32
-#         self.img_per_place = 4
-#         self.min_img_per_place = 4
-#         self.shuffle_all = False
-#         self.random_sample_from_each_place = True
-#         self.image_size = (320, 320)
-#         self.num_workers = 8
-#         self.show_data_stats = True
-#         self.val_set_names = ["sfxs_val"]
+    def test_epoch_end(self, test_step_outputs):
+        dm = self.trainer.datamodule
+        if len(dm.test_datasets) == 1:
+            test_step_outputs = [test_step_outputs]
 
-#         # VPRModel parameters
-#         self.backbone_arch = "resnet18"
-#         self.pretrained = True
-#         self.layers_to_freeze = 3
-#         self.layers_to_crop = [3, 4]
+        for i, (test_set_name, test_dataset) in enumerate(zip(dm.test_set_names, dm.test_datasets)):
+            feats = torch.concat(test_step_outputs[i], dim=0)
+            num_references = test_dataset.num_references
+            num_queries = test_dataset.num_queries
+            ground_truth = test_dataset.ground_truth
 
-#         # self.agg_arch = "ConvAP"
-#         # self.agg_config = {"in_channels": 2048,
-#         #                    "out_channels": 1024, "s1": 2, "s2": 2}
-#         self.agg_arch = "GeM"
-#         self.agg_config = {"p": 3}
+            r_list = feats[:num_references]
+            q_list = feats[num_references:]
 
-#         self.lr = 0.0002
-#         self.optimizer = "adam"
-#         self.weight_decay = 0
-#         self.momentum = 0.9
-#         self.warmpup_steps = 600
-#         self.milestones = [5, 10, 15, 25]
-#         self.lr_mult = 0.3
+            recalls_dict, predictions = utils.get_validation_recalls(r_list=r_list,
+                                                                     q_list=q_list,
+                                                                     k_values=[
+                                                                         1, 5],
+                                                                     gt=ground_truth,
+                                                                     print_results=True,
+                                                                     dataset_name=test_set_name,
+                                                                     faiss_gpu=self.faiss_gpu)
 
-#         self.loss_name = "MultiSimilarityLoss"
-#         self.miner_name = "MultiSimilarityMiner"
-#         self.miner_margin = 0.1
-#         self.faiss_gpu = False
+            del r_list, q_list, feats, num_references, ground_truth
 
-#         # ModelCheckpoint parameters
-#         self.monitor = "sfxx_val/R1"
-#         self.filename = f"{self.backbone_arch}_epoch({{epoch:02d}})_step({{step:04d}})_R1[{{pitts30k_val/R1:.4f}}]_R5[{{sfxs_val/R5:.4f}}]"
-#         self.auto_insert_metric_name = False
-#         self.save_weights_only = True
-#         self.save_top_k = 3
-#         self.mode = "max"
+            self.log(f"{test_set_name}/R1",
+                     recalls_dict[1], prog_bar=False, logger=True)
+            self.log(f"{test_set_name}/R5",
+                     recalls_dict[5], prog_bar=False, logger=True)
+            self.log(f"{test_set_name}/R10",
+                     recalls_dict[10], prog_bar=False, logger=True)
 
-#         # Trainer parameters
-#         self.accelerator = "cpu"
-#         self.devices = 1
-#         self.default_root_dir = f"./LOGS/{self.backbone_arch}"
-#         self.num_sanity_val_steps = 0
-#         self.precision = 16
-#         self.max_epochs = 30
-#         self.check_val_every_n_epoch = 1
-#         self.reload_dataloaders_every_n_epochs = 1
-#         self.log_every_n_steps = 1
-#         self.fast_dev_run = True
+        self.test_step_outputs.clear()
+
+
+class Args:
+    def __init__(self):
+        # GSVCitiesDataModule parameters
+        self.batch_size = 32
+        self.img_per_place = 4
+        self.min_img_per_place = 4
+        self.shuffle_all = False
+        self.random_sample_from_each_place = True
+        self.image_size = (320, 320)
+        self.num_workers = 8
+        self.show_data_stats = True
+        self.val_set_names = ["sfxs_val"]
+        self.test_set_names = ["sfxs_test", "tokyoxs_test"]
+
+        # VPRModel parameters
+        self.backbone_arch = "resnet18"
+        self.pretrained = True
+        self.layers_to_freeze = 3
+        self.layers_to_crop = [3, 4]
+
+        # self.agg_arch = "ConvAP"
+        # self.agg_config = {"in_channels": 2048,
+        #                    "out_channels": 1024, "s1": 2, "s2": 2}
+        self.agg_arch = "AVG"
+        self.agg_config = {}
+
+        self.lr = 0.001
+        self.optimizer = "adam"
+        self.weight_decay = 1e-3
+        self.momentum = 0.9
+        self.warmpup_steps = 600
+        self.milestones = [5, 10, 15, 25]
+        self.lr_mult = 0.3
+
+        self.loss_name = "MultiSimilarityLoss"
+        self.miner_name = "MultiSimilarityMiner"
+        self.miner_margin = 0.1
+        self.faiss_gpu = False
+
+        # ModelCheckpoint parameters
+        self.monitor = "sfxs_val/R1"
+        self.filename = f"{self.backbone_arch}_epoch({{epoch:02d}})_step({{step:04d}})_R1[{{sfxs_val/R1:.4f}}]_R5[{{sfxs_val/R5:.4f}}]"
+        self.auto_insert_metric_name = False
+        self.save_weights_only = True
+        self.save_top_k = 3
+        self.mode = "max"
+
+        # Trainer parameters
+        self.accelerator = "cpu"
+        self.devices = 1
+        self.default_root_dir = f"./LOGS/{self.backbone_arch}"
+        self.num_sanity_val_steps = 0
+        self.precision = 16
+        self.max_epochs = 30
+        self.check_val_every_n_epoch = 1
+        self.reload_dataloaders_every_n_epochs = 1
+        self.log_every_n_steps = 1
+        self.fast_dev_run = True
 
 
 if __name__ == "__main__":
     args = get_args()
     # args = Args()
-    
+
     pl.seed_everything(seed=1, workers=True)
 
     # Load the configuration file
@@ -333,7 +380,7 @@ if __name__ == "__main__":
     # Ensure the API key is in the config
     if 'WANDB_API_KEY' not in config:
         raise KeyError("WANDB_API_KEY not found in the configuration file")
-    
+
     wandb_api_key = config['WANDB_API_KEY']
     # Log in to wandb with the API key
     wandb.login(key=wandb_api_key)
@@ -437,10 +484,13 @@ if __name__ == "__main__":
             checkpoint_cb
         ],  # we run the checkpointing callback (you can add more)
     )
-    
+
     # log the hyperparameters to wandb
     wandb_logger.experiment.config.update(model.hparams)
 
     # we call the trainer, and give it the model and the datamodule
     # now you see the modularity of Pytorch Lighning?
     trainer.fit(model=model, datamodule=datamodule)
+
+    # After training, perform testing
+    trainer.test(model=model, datamodule=datamodule)

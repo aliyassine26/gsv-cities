@@ -6,14 +6,13 @@ import sys
 
 MAIN_PATH = Path(__file__).resolve().parent.parent.parent / "utils"
 sys.path.append(str(MAIN_PATH))
-from config import GT_ROOT, SF_XS_PATH
 
 # NOTE: you need to download the Nordland dataset from  https://surfdrive.surf.nl/files/index.php/s/sbZRXzYe3l0v67W
 # this link is shared and maintained by the authors of VPR_Bench: https://github.com/MubarizZaffar/VPR-Bench
 # the folders named ref and query should reside in DATASET_ROOT path
 # I hardcoded the image names and ground truth for faster evaluation
 # performance is exactly the same as if you use VPR-Bench.
-
+from config import GT_ROOT, SF_XS_PATH
 DATASET_ROOT = SF_XS_PATH
 
 path_obj = Path(DATASET_ROOT)
@@ -65,7 +64,7 @@ class SFXSDataset(Dataset):
 
 
 if __name__ == "__main__":
-    dataset = SFXSDataset("sfxs_test")
+    dataset = SFXSDataset("sfxs_val")
     print(len(dataset.dbImages))
     print(len(dataset.qImages))
     print(len(dataset.ground_truth))

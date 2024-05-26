@@ -56,6 +56,7 @@ class GSVCitiesDataModule(pl.LightningDataModule):
         batch_sampler: Sampler = None,
         random_sample_from_each_place: bool = True,
         val_set_names: list = ["sfxs_val"],
+        test_set_names: list = ["tokyoxs_test", "sfxs_test"],
     ):
         """
         Initializes the data loader with the specified parameters.
@@ -88,6 +89,7 @@ class GSVCitiesDataModule(pl.LightningDataModule):
         self.std_dataset = mean_std["std"]
         self.random_sample_from_each_place = random_sample_from_each_place
         self.val_set_names = val_set_names
+        self.test_set_names = test_set_names
         self.save_hyperparameters()
 
         self.train_transform = T.Compose(
@@ -103,6 +105,13 @@ class GSVCitiesDataModule(pl.LightningDataModule):
         self.valid_transform = T.Compose(
             [
                 T.Resize(image_size, interpolation=T.InterpolationMode.BILINEAR),
+                T.ToTensor(),
+                T.Normalize(mean=self.mean_dataset, std=self.std_dataset),
+            ]
+        )
+
+        self.test_transform = T.Compose(
+            [
                 T.ToTensor(),
                 T.Normalize(mean=self.mean_dataset, std=self.std_dataset),
             ]
@@ -147,6 +156,29 @@ class GSVCitiesDataModule(pl.LightningDataModule):
                         f"Validation set {valid_set_name} does not exist or has not been implemented yet"
                     )
                     raise NotImplementedError
+
+            # load test sets
+            self.test_datasets = []
+            for test_set_name in self.test_set_names:
+                if "sfxs" in test_set_name.lower():
+                    self.test_datasets.append(
+                        SFXSDataset(
+                            which_ds=test_set_name,
+                            input_transform=self.test_transform,
+                        )
+                    )
+                elif "tokyoxs" in test_set_name.lower():
+                    self.test_datasets.append(
+                        TokyoXSDataset(
+                            input_transform=self.test_transform,
+                        )
+                    )
+                else:
+                    print(
+                        f"Test set {test_set_name} does not exist or has not been implemented yet"
+                    )
+                    raise NotImplementedError
+
             if self.show_data_stats:
                 self.print_stats()
 
@@ -180,6 +212,17 @@ class GSVCitiesDataModule(pl.LightningDataModule):
             )
         return val_dataloaders
 
+    def test_dataloader(self):
+        """
+        Generate a test dataloader for each test dataset using the specified configuration.
+        """
+        test_dataloaders = []
+        for test_dataset in self.test_datasets:
+            test_dataloaders.append(
+                DataLoader(dataset=test_dataset)
+            )
+        return test_dataloaders
+
     def print_stats(self) -> None:
         """
         Generate statistics and print them in a tabular format for the training and validation datasets.
@@ -203,8 +246,26 @@ class GSVCitiesDataModule(pl.LightningDataModule):
         table.header = False
         for i, val_set_name in enumerate(self.val_set_names):
             table.add_row([f"Validation set {i+1}", f"{val_set_name}"])
-        # table.add_row(["# of places", f'{self.train_dataset.__len__()}'])
+            table.add_row(
+                ["# of Queries", f'{self.val_datasets[i].num_queries}'])
+            table.add_row(
+                ["# of References", f'{self.val_datasets[i].num_references}'])
         print(table.get_string(title="Validation Datasets"))
+        print()
+
+        table = PrettyTable()
+        table.field_names = ["Data", "Value"]
+        table.align["Data"] = "l"
+        table.align["Value"] = "l"
+        table.header = False
+        for i, test_set_name in enumerate(self.test_set_names):
+            table.add_row([f"Test set {i+1}", f"{test_set_name}"])
+            table.add_row(
+                ["# of Queries", f'{self.test_datasets[i].num_queries}'])
+            table.add_row(
+                ["# of References", f'{self.test_datasets[i].num_references}'])
+            table.add_row(["", ""])
+        print(table.get_string(title="Test Datasets"))
         print()
 
         table = PrettyTable()
@@ -220,3 +281,12 @@ class GSVCitiesDataModule(pl.LightningDataModule):
         )
         table.add_row(["Image size", f"{self.image_size}"])
         print(table.get_string(title="Training config"))
+
+
+if __name__ == "__main__":
+    dm = GSVCitiesDataModule()
+    dm.setup("fit")
+    # dm.print_stats()
+    # train_loader = dm.train_dataloader()
+    # val_loader = dm.val_dataloader()
+    print("Finished")
