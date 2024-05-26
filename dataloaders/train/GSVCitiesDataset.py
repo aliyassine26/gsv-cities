@@ -7,15 +7,16 @@ from pathlib import Path
 MAIN_PATH = Path(__file__).resolve().parent.parent.parent / "utils"
 sys.path.append(str(MAIN_PATH))
 
-from config import GSV_CITIES_PATH, DF_PATH  # type: ignore
-from torchvision import transforms as T
-import typing
-from PIL import Image
-from torch.utils.data import Dataset, DataLoader
-import torch
-import matplotlib.pyplot as plt
-import random
 import pandas as pd
+import random
+import matplotlib.pyplot as plt
+import torch
+from torch.utils.data import Dataset, DataLoader
+from PIL import Image
+import typing
+from torchvision import transforms as T
+from config import GSV_CITIES_PATH, DF_PATH  # type: ignore
+
 
 
 def show_image(image: str, title: str) -> None:
@@ -274,12 +275,14 @@ class GSVCitiesDataset(GSVBaseDataset):
         with all duplicate place_ids removed.
         """
         # read the first city dataframe
-        df = pd.read_csv(self.dataframes_dir + f"/{self.cities[0].lower()}.csv")
+        df = pd.read_csv(self.dataframes_dir +
+                         f"\\{self.cities[0].lower()}.csv")
         df = df.sample(frac=1)  # shuffle the city dataframe
 
         # append other cities one by one
         for i in range(1, len(self.cities)):
-            tmp_df = pd.read_csv(self.dataframes_dir + f"/{self.cities[i].lower()}.csv")
+            tmp_df = pd.read_csv(self.dataframes_dir +
+                                 f"\\{self.cities[i].lower()}.csv")
 
             # Now we add a prefix to place_id, so that we
             # don't confuse, say, place number 13 of NewYork
@@ -331,7 +334,8 @@ class GSVCitiesDataset(GSVBaseDataset):
         imgs = []
         for i, row in place.iterrows():
             img_path = self.get_img_name(row)
-            img = self.image_loader(os.path.join(self.root_dir, city, img_path))
+            img = self.image_loader(os.path.join(
+                self.root_dir, city, img_path))
 
             if self.transform is not None:
                 img = self.transform(img)

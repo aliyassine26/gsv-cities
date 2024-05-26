@@ -139,7 +139,7 @@ venv.bak/
 
 # Rope project settings
 .ropeproject
-
+datasets/gsv_xs/.tmp.driveupload
 # mkdocs documentation
 /site
 envv/

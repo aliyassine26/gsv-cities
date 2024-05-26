@@ -206,30 +206,26 @@ class VPRModel(pl.LightningModule):
         places, _ = batch
         # calculate descriptors
         descriptors = self(places)
-        self.validation_step_outputs.append(descriptors.detach().cpu())
         return descriptors.detach().cpu()
 
-    def on_validation_epoch_end(self):
+    def validation_epoch_end(self, val_step_outputs):
         """at the end of each validation epoch
         descriptors are returned in their order
-        depending on how the validation dataset is implemented
+        depending on how the validation dataset is implemented 
         for this project (MSLS val, Pittburg val), it is always references then queries.
-        For example, if we have n references and m queries, we will get
-        the descriptors for each val_dataset in a list as follows:
+        For example, if we have n references and m queries, we will get 
+        the descriptors for each val_dataset in a list as follows: 
         [R1, R2, ..., Rn, Q1, Q2, ..., Qm]
         we then split it to references=[R1, R2, ..., Rn] and queries=[Q1, Q2, ..., Qm]
         to calculate recall@K using the ground truth provided.
         """
-        val_step_outputs = self.val_step_outputs
         dm = self.trainer.datamodule
         # The following line is a hack: if we have only one validation set, then
         # we need to put the outputs in a list (Pytorch Lightning does not do it presently)
         if len(dm.val_datasets) == 1:  # we need to put the outputs in a list
             val_step_outputs = [val_step_outputs]
 
-        for i, (val_set_name, val_dataset) in enumerate(
-            zip(dm.val_set_names, dm.val_datasets)
-        ):
+        for i, (val_set_name, val_dataset) in enumerate(zip(dm.val_set_names, dm.val_datasets)):
             feats = torch.concat(val_step_outputs[i], dim=0)
 
             num_references = val_dataset.num_references
@@ -237,75 +233,74 @@ class VPRModel(pl.LightningModule):
             ground_truth = val_dataset.ground_truth
 
             # split to ref and queries
-            r_list = feats[:num_references]
+            r_list = feats[: num_references]
             q_list = feats[num_references:]
 
-            recalls_dict, predictions = utils.get_validation_recalls(
-                r_list=r_list,
-                q_list=q_list,
-                k_values=[1, 5, 10, 15, 20, 25],
-                gt=ground_truth,
-                print_results=True,
-                dataset_name=val_set_name,
-                faiss_gpu=self.faiss_gpu,
-            )
+            recalls_dict, predictions = utils.get_validation_recalls(r_list=r_list,
+                                                                     q_list=q_list,
+                                                                     k_values=[
+                                                                         1, 5, 10, 15, 20, 25],
+                                                                     gt=ground_truth,
+                                                                     print_results=True,
+                                                                     dataset_name=val_set_name,
+                                                                     faiss_gpu=self.faiss_gpu
+                                                                     )
             del r_list, q_list, feats, num_references, ground_truth
 
-            self.log(f"{val_set_name}/R1", recalls_dict[1], prog_bar=False, logger=True)
-            self.log(f"{val_set_name}/R5", recalls_dict[5], prog_bar=False, logger=True)
-            self.log(
-                f"{val_set_name}/R10", recalls_dict[10], prog_bar=False, logger=True
-            )
-        print("\n\n")
+            self.log(f'{val_set_name}/R1',
+                     recalls_dict[1], prog_bar=False, logger=True)
+            self.log(f'{val_set_name}/R5',
+                     recalls_dict[5], prog_bar=False, logger=True)
+            self.log(f'{val_set_name}/R10',
+                     recalls_dict[10], prog_bar=False, logger=True)
+        print('\n\n')
 
-        self.validation_step_outputs.clear()
 
+class Args:
+    def __init__(self):
+        # GSVCitiesDataModule parameters
+        self.batch_size = 32
+        self.img_per_place = 4
+        self.min_img_per_place = 4
+        self.shuffle_all = False
+        self.random_sample_from_each_place = True
+        self.image_size = (320, 320)
+        self.num_workers = 8
+        self.show_data_stats = True
+        self.val_set_names = ["sfxs_val"]
 
-# class Args:
-#     def __init__(self):
-#         # GSVCitiesDataModule parameters
-#         self.batch_size = 32
-#         self.img_per_place = 4
-#         self.min_img_per_place = 4
-#         self.shuffle_all = False
-#         self.random_sample_from_each_place = True
-#         self.image_size = (320, 320)
-#         self.num_workers = 8
-#         self.show_data_stats = True
-#         self.val_set_names = ["sfxs_val"]
+        # VPRModel parameters
+        self.backbone_arch = "resnet18"
+        self.pretrained = True
+        self.layers_to_freeze = 3
+        self.layers_to_crop = [3, 4]
 
-#         # VPRModel parameters
-#         self.backbone_arch = "resnet18"
-#         self.pretrained = True
-#         self.layers_to_freeze = 3
-#         self.layers_to_crop = [3, 4]
+        # self.agg_arch = "ConvAP"
+        # self.agg_config = {"in_channels": 2048,
+        #                    "out_channels": 1024, "s1": 2, "s2": 2}
+        self.agg_arch = "GeM"
+        self.agg_config = {"p": 3}
 
-#         # self.agg_arch = "ConvAP"
-#         # self.agg_config = {"in_channels": 2048,
-#         #                    "out_channels": 1024, "s1": 2, "s2": 2}
-#         self.agg_arch = "GeM"
-#         self.agg_config = {"p": 3}
+        self.lr = 0.0002
+        self.optimizer = "adam"
+        self.weight_decay = 0
+        self.momentum = 0.9
+        self.warmpup_steps = 600
+        self.milestones = [5, 10, 15, 25]
+        self.lr_mult = 0.3
 
-#         self.lr = 0.0002
-#         self.optimizer = "adam"
-#         self.weight_decay = 0
-#         self.momentum = 0.9
-#         self.warmpup_steps = 600
-#         self.milestones = [5, 10, 15, 25]
-#         self.lr_mult = 0.3
+        self.loss_name = "MultiSimilarityLoss"
+        self.miner_name = "MultiSimilarityMiner"
+        self.miner_margin = 0.1
+        self.faiss_gpu = False
 
-#         self.loss_name = "MultiSimilarityLoss"
-#         self.miner_name = "MultiSimilarityMiner"
-#         self.miner_margin = 0.1
-#         self.faiss_gpu = False
-
-#         # ModelCheckpoint parameters
-#         self.monitor = "sfxx_val/R1"
-#         self.filename = f"{self.backbone_arch}_epoch({{epoch:02d}})_step({{step:04d}})_R1[{{pitts30k_val/R1:.4f}}]_R5[{{sfxs_val/R5:.4f}}]"
-#         self.auto_insert_metric_name = False
-#         self.save_weights_only = True
-#         self.save_top_k = 3
-#         self.mode = "max"
+        # ModelCheckpoint parameters
+        self.monitor = "sfxx_val/R1"
+        self.filename = f"{self.backbone_arch}_epoch({{epoch:02d}})_step({{step:04d}})_R1[{{pitts30k_val/R1:.4f}}]_R5[{{sfxs_val/R5:.4f}}]"
+        self.auto_insert_metric_name = False
+        self.save_weights_only = True
+        self.save_top_k = 3
+        self.mode = "max"
 
         # Trainer parameters
         self.accelerator = "cpu"
@@ -321,8 +316,8 @@ class VPRModel(pl.LightningModule):
 
 
 if __name__ == "__main__":
-    args = get_args()
-    # args = Args()
+    # args = get_args()
+    args = Args()
     pl.seed_everything(seed=1, workers=True)
 
     # the datamodule contains train and validation dataloaders,
