@@ -7,15 +7,18 @@ from pathlib import Path
 MAIN_PATH = Path(__file__).resolve().parent.parent.parent / "utils"
 sys.path.append(str(MAIN_PATH))
 
-from config import GSV_CITIES_PATH, DF_PATH  # type: ignore
-from torchvision import transforms as T
-import typing
-from PIL import Image
-from torch.utils.data import Dataset, DataLoader
-import torch
-import matplotlib.pyplot as plt
-import random
+
 import pandas as pd
+import random
+import matplotlib.pyplot as plt
+import torch
+from torch.utils.data import Dataset, DataLoader
+from PIL import Image
+import typing
+from torchvision import transforms as T
+from config import GSV_CITIES_PATH, DF_PATH  # type: ignore
+
+
 
 
 def show_image(image: str, title: str) -> None:
