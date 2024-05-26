@@ -10,6 +10,10 @@ from models import helper
 from src.configs.args import parse_args
 from argparse import Namespace
 
+import yaml
+import wandb 
+from pytorch_lightning.loggers import WandbLogger
+
 
 def get_args() -> Namespace:
     parser = parse_args()
@@ -247,78 +251,95 @@ class VPRModel(pl.LightningModule):
                                                                      )
             del r_list, q_list, feats, num_references, ground_truth
 
-            self.log(f'{val_set_name}/R1',
-                     recalls_dict[1], prog_bar=False, logger=True)
-            self.log(f'{val_set_name}/R5',
-                     recalls_dict[5], prog_bar=False, logger=True)
-            self.log(f'{val_set_name}/R10',
-                     recalls_dict[10], prog_bar=False, logger=True)
-        print('\n\n')
+            self.log(f"{val_set_name}/R1", recalls_dict[1], prog_bar=False, logger=True)
+            self.log(f"{val_set_name}/R5", recalls_dict[5], prog_bar=False, logger=True)
+            self.log(
+                f"{val_set_name}/R10", recalls_dict[10], prog_bar=False, logger=True
+            )
+        print("\n\n")
+
+        self.validation_step_outputs.clear()
 
 
-class Args:
-    def __init__(self):
-        # GSVCitiesDataModule parameters
-        self.batch_size = 32
-        self.img_per_place = 4
-        self.min_img_per_place = 4
-        self.shuffle_all = False
-        self.random_sample_from_each_place = True
-        self.image_size = (320, 320)
-        self.num_workers = 8
-        self.show_data_stats = True
-        self.val_set_names = ["sfxs_val"]
+# class Args:
+#     def __init__(self):
+#         # GSVCitiesDataModule parameters
+#         self.batch_size = 32
+#         self.img_per_place = 4
+#         self.min_img_per_place = 4
+#         self.shuffle_all = False
+#         self.random_sample_from_each_place = True
+#         self.image_size = (320, 320)
+#         self.num_workers = 8
+#         self.show_data_stats = True
+#         self.val_set_names = ["sfxs_val"]
 
-        # VPRModel parameters
-        self.backbone_arch = "resnet18"
-        self.pretrained = True
-        self.layers_to_freeze = 3
-        self.layers_to_crop = [3, 4]
+#         # VPRModel parameters
+#         self.backbone_arch = "resnet18"
+#         self.pretrained = True
+#         self.layers_to_freeze = 3
+#         self.layers_to_crop = [3, 4]
 
-        # self.agg_arch = "ConvAP"
-        # self.agg_config = {"in_channels": 2048,
-        #                    "out_channels": 1024, "s1": 2, "s2": 2}
-        self.agg_arch = "GeM"
-        self.agg_config = {"p": 3}
+#         # self.agg_arch = "ConvAP"
+#         # self.agg_config = {"in_channels": 2048,
+#         #                    "out_channels": 1024, "s1": 2, "s2": 2}
+#         self.agg_arch = "GeM"
+#         self.agg_config = {"p": 3}
 
-        self.lr = 0.0002
-        self.optimizer = "adam"
-        self.weight_decay = 0
-        self.momentum = 0.9
-        self.warmpup_steps = 600
-        self.milestones = [5, 10, 15, 25]
-        self.lr_mult = 0.3
+#         self.lr = 0.0002
+#         self.optimizer = "adam"
+#         self.weight_decay = 0
+#         self.momentum = 0.9
+#         self.warmpup_steps = 600
+#         self.milestones = [5, 10, 15, 25]
+#         self.lr_mult = 0.3
 
-        self.loss_name = "MultiSimilarityLoss"
-        self.miner_name = "MultiSimilarityMiner"
-        self.miner_margin = 0.1
-        self.faiss_gpu = False
+#         self.loss_name = "MultiSimilarityLoss"
+#         self.miner_name = "MultiSimilarityMiner"
+#         self.miner_margin = 0.1
+#         self.faiss_gpu = False
 
-        # ModelCheckpoint parameters
-        self.monitor = "sfxx_val/R1"
-        self.filename = f"{self.backbone_arch}_epoch({{epoch:02d}})_step({{step:04d}})_R1[{{pitts30k_val/R1:.4f}}]_R5[{{sfxs_val/R5:.4f}}]"
-        self.auto_insert_metric_name = False
-        self.save_weights_only = True
-        self.save_top_k = 3
-        self.mode = "max"
+#         # ModelCheckpoint parameters
+#         self.monitor = "sfxx_val/R1"
+#         self.filename = f"{self.backbone_arch}_epoch({{epoch:02d}})_step({{step:04d}})_R1[{{pitts30k_val/R1:.4f}}]_R5[{{sfxs_val/R5:.4f}}]"
+#         self.auto_insert_metric_name = False
+#         self.save_weights_only = True
+#         self.save_top_k = 3
+#         self.mode = "max"
 
-        # Trainer parameters
-        self.accelerator = "cpu"
-        self.devices = 1
-        self.default_root_dir = f"./LOGS/{self.backbone_arch}"
-        self.num_sanity_val_steps = 0
-        self.precision = 16
-        self.max_epochs = 1
-        self.check_val_every_n_epoch = 1
-        self.reload_dataloaders_every_n_epochs = 1
-        self.log_every_n_steps = 1
-        self.fast_dev_run = False
+#         # Trainer parameters
+#         self.accelerator = "cpu"
+#         self.devices = 1
+#         self.default_root_dir = f"./LOGS/{self.backbone_arch}"
+#         self.num_sanity_val_steps = 0
+#         self.precision = 16
+#         self.max_epochs = 30
+#         self.check_val_every_n_epoch = 1
+#         self.reload_dataloaders_every_n_epochs = 1
+#         self.log_every_n_steps = 1
+#         self.fast_dev_run = True
 
 
 if __name__ == "__main__":
-    # args = get_args()
-    args = Args()
+    args = get_args()
+    # args = Args()
+    
     pl.seed_everything(seed=1, workers=True)
+
+    # Load the configuration file
+    with open('./src/configs/secret.yml', 'r') as f:
+        config = yaml.safe_load(f)
+
+    # Ensure the API key is in the config
+    if 'WANDB_API_KEY' not in config:
+        raise KeyError("WANDB_API_KEY not found in the configuration file")
+    
+    wandb_api_key = config['WANDB_API_KEY']
+    # Log in to wandb with the API key
+    wandb.login(key=wandb_api_key)
+
+    # Initializing wandb with the project name
+    wandb_logger = WandbLogger(project="visual_place_recognition")
 
     # the datamodule contains train and validation dataloaders,
     # refer to ./dataloader/GSVCitiesDataloader.py for details
@@ -397,6 +418,7 @@ if __name__ == "__main__":
     # ------------------
     # we instanciate a trainer
     trainer = pl.Trainer(
+        logger=wandb_logger,
         accelerator=args.accelerator,
         devices=args.devices,
         default_root_dir=args.default_root_dir,  # Tensorflow can be used to viz
@@ -415,6 +437,9 @@ if __name__ == "__main__":
             checkpoint_cb
         ],  # we run the checkpointing callback (you can add more)
     )
+    
+    # log the hyperparameters to wandb
+    wandb_logger.experiment.config.update(model.hparams)
 
     # we call the trainer, and give it the model and the datamodule
     # now you see the modularity of Pytorch Lighning?

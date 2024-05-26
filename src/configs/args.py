@@ -21,7 +21,7 @@ def parse_args():
 
     # Model arguments
     parser.add_argument(
-        "--backbone_arch", type=str, default="resnet50", help="Backbone architecture"
+        "--backbone_arch", type=str, default="resnet18", help="Backbone architecture"
     )
     parser.add_argument(
         "--pretrained", type=bool, default=True, help="Use pretrained weights"
