@@ -1,7 +1,12 @@
+import os
 import numpy as np
 import faiss
 import faiss.contrib.torch_utils
 from prettytable import PrettyTable
+import torch
+import warnings
+warnings.filterwarnings("ignore")
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 
 def get_validation_recalls(r_list: np.ndarray,
@@ -26,6 +31,10 @@ def get_validation_recalls(r_list: np.ndarray,
     """
 
     embed_size = r_list.shape[1]
+
+    r_list = torch.tensor(r_list, dtype=torch.float32)  # changed
+    q_list = torch.tensor(q_list, dtype=torch.float32)  # changed
+
     if faiss_gpu:
         res = faiss.StandardGpuResources()
         flat_config = faiss.GpuIndexFlatConfig()
@@ -36,6 +45,7 @@ def get_validation_recalls(r_list: np.ndarray,
     else:
         faiss_index = faiss.IndexFlatL2(embed_size)
 
+    # print(r_list)
     # add references
     faiss_index.add(r_list)
 
@@ -62,3 +72,15 @@ def get_validation_recalls(r_list: np.ndarray,
         print(table.get_string(title=f"Performance on {dataset_name}"))
 
     return d, predictions
+
+
+if __name__ == '__main__':
+    # dummy data
+    r_list = np.random.rand(100, 512)
+    q_list = np.random.rand(1, 512)
+    k_values = [1, 5]
+    gt = np.random.randint(0, 100, 100)
+    r, p = get_validation_recalls(r_list, q_list, k_values, gt)
+    print(r)
+    print(p)
+    print(p.shape)

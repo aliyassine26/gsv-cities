@@ -39,7 +39,7 @@ def parse_args():
         help="Layers to crop in the backbone",
     )
     parser.add_argument(
-        "--agg_arch", type=str, default="ConvAP", help="Aggregator architecture"
+        "--agg_arch", type=str, default="AVG", help="Aggregator architecture"
     )
     parser.add_argument(
         "--agg_config",
@@ -47,10 +47,14 @@ def parse_args():
         default={},
         help="Configuration for the aggregator",
     )
-    parser.add_argument("--lr", type=float, default=0.0002, help="Learning rate")
-    parser.add_argument("--optimizer", type=str, default="adam", help="Optimizer type")
-    parser.add_argument("--weight_decay", type=float, default=0, help="Weight decay")
-    parser.add_argument("--momentum", type=float, default=0.9, help="Momentum for SGD")
+    parser.add_argument("--lr", type=float, default=0.0002,
+                        help="Learning rate")
+    parser.add_argument("--optimizer", type=str,
+                        default="adam", help="Optimizer type")
+    parser.add_argument("--weight_decay", type=float,
+                        default=0, help="Weight decay")
+    parser.add_argument("--momentum", type=float,
+                        default=0.9, help="Momentum for SGD")
     parser.add_argument(
         "--warmpup_steps", type=int, default=600, help="Number of warmpup steps"
     )
@@ -83,8 +87,10 @@ def parse_args():
     )
 
     # Data module arguments
-    parser.add_argument("--batch_size", type=int, default=100, help="Batch size")
-    parser.add_argument("--img_per_place", type=int, default=4, help="Images per place")
+    parser.add_argument("--batch_size", type=int,
+                        default=100, help="Batch size")
+    parser.add_argument("--img_per_place", type=int,
+                        default=4, help="Images per place")
     parser.add_argument(
         "--min_img_per_place", type=int, default=4, help="Minimum images per place"
     )
@@ -112,7 +118,7 @@ def parse_args():
     parser.add_argument(
         "--val_set_names",
         type=parse_list,
-        default=["pitts30k_val", "msls_val"],
+        default=["msls_val"],
         help="Validation set names",
     )
 

@@ -1,18 +1,18 @@
+from pytorch_lightning.loggers import WandbLogger
+import wandb
+import yaml
+import numpy as np
+from argparse import Namespace
+from src.configs.args import parse_args
+from models import helper
+from dataloaders.GSVCitiesDataloader import GSVCitiesDataModule
 import torch
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.optim import lr_scheduler
 import utils
-
-from dataloaders.GSVCitiesDataloader import GSVCitiesDataModule
-from models import helper
-
-from src.configs.args import parse_args
-from argparse import Namespace
-
-import yaml
-import wandb
-from pytorch_lightning.loggers import WandbLogger
+import warnings
+warnings.filterwarnings("ignore")
 
 
 def get_args() -> Namespace:
@@ -73,6 +73,7 @@ class VPRModel(pl.LightningModule):
 
         self.save_hyperparameters()  # write hyperparams into a file
         self.validation_step_outputs = []
+        self.test_step_outputs = []
         self.loss_fn = utils.get_loss(loss_name)
         self.miner = utils.get_miner(miner_name, miner_margin)
         self.batch_acc = (
@@ -86,7 +87,7 @@ class VPRModel(pl.LightningModule):
         self.backbone = helper.get_backbone(
             backbone_arch, pretrained, layers_to_freeze, layers_to_crop
         )
-        
+
         self.aggregator = helper.get_aggregator(
             agg_arch, agg_config)  # AVG -> agg_config = {}
 
@@ -117,10 +118,10 @@ class VPRModel(pl.LightningModule):
             raise ValueError(
                 f'Optimizer {self.optimizer} has not been added to "configure_optimizers()"'
             )
-        scheduler = lr_scheduler.MultiStepLR(
-            optimizer, milestones=self.milestones, gamma=self.lr_mult
-        )
-        return [optimizer], [scheduler]
+        # scheduler = lr_scheduler.MultiStepLR(
+        #     optimizer, milestones=self.milestones, gamma=self.lr_mult
+        # )
+        return [optimizer]  # , [scheduler]
 
     # configure the optizer step, takes into account the warmpup stage
     # def optimizer_step(
@@ -198,11 +199,11 @@ class VPRModel(pl.LightningModule):
             descriptors, labels
         )  # Call the loss_function we defined above
 
-        self.log("train_loss", loss.item(), logger=True)
-        return {"train_loss": loss}
+        self.log("loss", loss.item(), logger=True)
+        return {"loss": loss}
 
     # This is called at the end of eatch training epoch
-    def on_train_epoch_end(self, training_step_outputs):
+    def on_train_epoch_end(self):
         # we empty the batch_acc list for next epoch
         self.batch_acc = []
 
@@ -212,6 +213,7 @@ class VPRModel(pl.LightningModule):
         places, _ = batch
         # calculate descriptors
         descriptors = self(places)
+        self.validation_step_outputs.append(descriptors.detach().cpu())
         return descriptors.detach().cpu()
 
     def validation_epoch_end(self, val_step_outputs):
@@ -253,32 +255,28 @@ class VPRModel(pl.LightningModule):
                                                                      )
             del r_list, q_list, feats, num_references, ground_truth
 
-            self.log(f"{val_set_name}/R1",
+            self.log(f'{val_set_name}/R1',
                      recalls_dict[1], prog_bar=False, logger=True)
-            self.log(f"{val_set_name}/R5",
+            self.log(f'{val_set_name}/R5',
                      recalls_dict[5], prog_bar=False, logger=True)
-            self.log(
-                f"{val_set_name}/R10", recalls_dict[10], prog_bar=False, logger=True
-            )
 
-        print(predictions)
-        print("\n\n")
-
-        self.validation_step_outputs.clear()
-
-    def test_step(self, batch, batch_idx):
+    def test_step(self, batch, batch_idx, dataloader_idx=0):
         places, _ = batch
         # calculate descriptors
         descriptors = self(places)
+        self.test_step_outputs.append(descriptors.detach().cpu())
         return descriptors.detach().cpu()
 
     def test_epoch_end(self, test_step_outputs):
         dm = self.trainer.datamodule
-        if len(dm.test_datasets) == 1:
+
+        if len(self.test_step_outputs) == 1:
             test_step_outputs = [test_step_outputs]
 
         for i, (test_set_name, test_dataset) in enumerate(zip(dm.test_set_names, dm.test_datasets)):
-            feats = torch.concat(test_step_outputs[i], dim=0)
+
+            feats = torch.cat(test_step_outputs[i], dim=0)
+
             num_references = test_dataset.num_references
             num_queries = test_dataset.num_queries
             ground_truth = test_dataset.ground_truth
@@ -301,24 +299,24 @@ class VPRModel(pl.LightningModule):
                      recalls_dict[1], prog_bar=False, logger=True)
             self.log(f"{test_set_name}/R5",
                      recalls_dict[5], prog_bar=False, logger=True)
-            self.log(f"{test_set_name}/R10",
-                     recalls_dict[10], prog_bar=False, logger=True)
 
+        print('TEST...\n')
+        print(predictions)
         self.test_step_outputs.clear()
 
 
 class Args:
     def __init__(self):
         # GSVCitiesDataModule parameters
-        self.batch_size = 32
-        self.img_per_place = 4
-        self.min_img_per_place = 4
+        self.batch_size = 64
+        self.img_per_place = 2
+        self.min_img_per_place = 2
         self.shuffle_all = False
         self.random_sample_from_each_place = True
         self.image_size = (320, 320)
         self.num_workers = 8
         self.show_data_stats = True
-        self.val_set_names = ["sfxs_val"]
+        self.val_set_names = ["msls_val"]
         self.test_set_names = ["sfxs_test", "tokyoxs_test"]
 
         # VPRModel parameters
@@ -333,7 +331,7 @@ class Args:
         self.agg_arch = "AVG"
         self.agg_config = {}
 
-        self.lr = 0.001
+        self.lr = 0.1
         self.optimizer = "adam"
         self.weight_decay = 1e-3
         self.momentum = 0.9
@@ -359,8 +357,8 @@ class Args:
         self.devices = 1
         self.default_root_dir = f"./LOGS/{self.backbone_arch}"
         self.num_sanity_val_steps = 0
-        self.precision = 16
-        self.max_epochs = 30
+        self.precision = 32
+        self.max_epochs = 2
         self.check_val_every_n_epoch = 1
         self.reload_dataloaders_every_n_epochs = 1
         self.log_every_n_steps = 1
@@ -368,8 +366,8 @@ class Args:
 
 
 if __name__ == "__main__":
-    args = get_args()
-    # args = Args()
+    # args = get_args()
+    args = Args()
 
     pl.seed_everything(seed=1, workers=True)
 
