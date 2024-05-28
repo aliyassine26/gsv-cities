@@ -118,7 +118,7 @@ def parse_args():
     parser.add_argument(
         "--val_set_names",
         type=parse_list,
-        default=["msls_val"],
+        default=["sfxs_val"],
         help="Validation set names",
     )
 
@@ -126,7 +126,7 @@ def parse_args():
     parser.add_argument(
         "--monitor",
         type=str,
-        default="pitts30k_val/R1",
+        default="sfxs_val/R1",
         help="Metric to monitor for checkpointing",
     )
     parser.add_argument(

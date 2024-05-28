@@ -316,7 +316,7 @@ class Args:
         self.image_size = (320, 320)
         self.num_workers = 8
         self.show_data_stats = True
-        self.val_set_names = ["msls_val"]
+        self.val_set_names = ["sfxs_val"]
         self.test_set_names = ["sfxs_test", "tokyoxs_test"]
 
         # VPRModel parameters
@@ -358,11 +358,11 @@ class Args:
         self.default_root_dir = f"./LOGS/{self.backbone_arch}"
         self.num_sanity_val_steps = 0
         self.precision = 32
-        self.max_epochs = 2
+        self.max_epochs = 1
         self.check_val_every_n_epoch = 1
         self.reload_dataloaders_every_n_epochs = 1
         self.log_every_n_steps = 1
-        self.fast_dev_run = True
+        self.fast_dev_run = False
 
 
 if __name__ == "__main__":
