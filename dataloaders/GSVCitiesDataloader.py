@@ -4,6 +4,7 @@ from torch.utils.data import Sampler
 from dataloaders.train.GSVCitiesDataset import GSVCitiesDataset
 from dataloaders.val.SFXSDataset import SFXSDataset
 from dataloaders.val.TokyoXSDataset import TokyoXSDataset
+from dataloaders.val.MapillaryDataset import MSLS
 import typing
 from prettytable import PrettyTable
 import pytorch_lightning as pl
@@ -121,16 +122,18 @@ class GSVCitiesDataModule(pl.LightningDataModule):
             "batch_size": self.batch_size,
             "num_workers": self.num_workers,
             "drop_last": False,
-            "pin_memory": True,
+            "pin_memory": False,
             "shuffle": self.shuffle_all,
+            "persistent_workers": True,
         }
 
         self.valid_loader_config = {
             "batch_size": self.batch_size,
             "num_workers": self.num_workers // 2,
             "drop_last": False,
-            "pin_memory": True,
+            # "pin_memory": True,
             "shuffle": False,
+            "persistent_workers": True,
         }
 
     def setup(self, stage) -> None:
@@ -151,6 +154,9 @@ class GSVCitiesDataModule(pl.LightningDataModule):
                             input_transform=self.valid_transform,
                         )
                     )
+                elif valid_set_name.lower() == 'msls_val':
+                    self.val_datasets.append(MSLS(
+                        input_transform=self.valid_transform))
                 else:
                     print(
                         f"Validation set {valid_set_name} does not exist or has not been implemented yet"
@@ -173,6 +179,7 @@ class GSVCitiesDataModule(pl.LightningDataModule):
                             input_transform=self.test_transform,
                         )
                     )
+
                 else:
                     print(
                         f"Test set {test_set_name} does not exist or has not been implemented yet"
