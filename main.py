@@ -14,6 +14,9 @@ import yaml
 import wandb
 from pytorch_lightning.loggers import WandbLogger
 
+import os
+from datetime import datetime
+import numpy as np
 
 def get_args() -> Namespace:
     parser = parse_args()
@@ -95,6 +98,31 @@ class VPRModel(pl.LightningModule):
         x = self.backbone(x)
         x = self.aggregator(x)
         return x
+
+    def save_predictions(self, predictions, directory='predictions', test_set_name='test_set'):
+        """Save the predictions tensor as a .npy file with a timestamp."""
+        # Convert the tensor to a NumPy array
+        predictions_np = predictions.numpy()
+        
+        # Create the directory if it does not exist
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        
+        # Generate the filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        file_name = f"{test_set_name}_{timestamp}.npy"
+
+        # Try this later to add the epoch number to the filename
+        # file_name = f"{test_set_name}_epoch{self.current_epoch}_{timestamp}.npy"
+
+        # Path to save the NumPy array
+        file_path = os.path.join(directory, file_name)
+        
+        # Save the NumPy array as a .npy file
+        np.save(file_path, predictions_np)
+        
+        print(f'Predictions saved to {file_path}')
 
     # configure the optimizer
     def configure_optimizers(self):
@@ -294,6 +322,9 @@ class VPRModel(pl.LightningModule):
                                                                      print_results=True,
                                                                      dataset_name=test_set_name,
                                                                      faiss_gpu=self.faiss_gpu)
+            
+            # Save predictions to a file
+            self.save_predictions(predictions, directory='predictions', test_set_name=test_set_name)
 
             del r_list, q_list, feats, num_references, ground_truth
 
