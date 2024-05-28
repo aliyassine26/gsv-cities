@@ -46,7 +46,7 @@ def get_backbone(
         )
 
 
-def get_aggregator(agg_arch: str = "ConvAP", agg_config: dict = {}) -> nn.Module:
+def get_aggregator(agg_arch: str = "AVG", agg_config: dict = {}) -> nn.Module:
     """Helper function that returns the aggregation layer given its name.
     If you happen to make your own aggregator, you might need to add a call
     to this helper function.
@@ -63,6 +63,9 @@ def get_aggregator(agg_arch: str = "ConvAP", agg_config: dict = {}) -> nn.Module
         assert "in_dim" in agg_config
         assert "out_dim" in agg_config
         return aggregators.CosPlace(**agg_config)
+
+    elif "avg" in agg_arch.lower():
+        return aggregators.AVG()
 
     elif "gem" in agg_arch.lower():
         if agg_config == {}:
@@ -82,10 +85,6 @@ def get_aggregator(agg_arch: str = "ConvAP", agg_config: dict = {}) -> nn.Module
         assert "in_w" in agg_config
         assert "mix_depth" in agg_config
         return aggregators.MixVPR(**agg_config)
-
-    elif "avg" in agg_arch.lower():
-        return aggregators.AVG()
-
 
 # -------------------------------------
 
