@@ -55,24 +55,3 @@ class ImageLoader:
         """Get the query image given its index."""
         return plt.imread(self.db_images[self.queries[query_index]])
 
-    
-
-# # Example usage:
-# image_loader = ImageLoader('./datasets/SF_XS/sfxs_test_dbImages.npy', './predictions/test_set_20240528_201151.npy', './datasets/SF_XS/sfxs_test_qImages.npy', r'E:\MLDL24\Datasets\sf_xs')
-
-# # Display an image
-# image_loader.display_image(0)
-
-# # Get the path of an image
-# image_path = image_loader.get_image_path(0)
-# print("Path of the image:", image_path)
-
-# # Show a query with its predictions
-# image_loader.show_query_with_predictions(0)
-
-# # Show multiple queries with  predictions
-# image_loader.show_multiple_queries_with_predictions([0, 1, 2])
-
-# # Get predictions for a query
-# query_predictions = image_loader.get_predictions_for_query(0)
-# print("Predictions for query:", query_predictions)
