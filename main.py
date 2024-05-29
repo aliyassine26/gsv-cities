@@ -77,8 +77,7 @@ class VPRModel(pl.LightningModule):
         self.miner_margin = miner_margin
 
         self.save_hyperparameters()  # write hyperparams into a file
-        self.validation_step_outputs = []
-        self.test_step_outputs = []
+
         self.loss_fn = utils.get_loss(loss_name)
         self.miner = utils.get_miner(miner_name, miner_margin)
         self.batch_acc = (
@@ -133,7 +132,7 @@ class VPRModel(pl.LightningModule):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        file_name = f"{val_set_name}_{self.backbone_arch}_epoch({{epoch: 02d}}).npy"
+        file_name = f"{val_set_name}_{self.encoder_arch}_epoch_{self.current_epoch}.npy"
 
         # Path to save the NumPy array
         file_path = os.path.join(directory, file_name)
@@ -142,9 +141,8 @@ class VPRModel(pl.LightningModule):
         np.save(file_path, predictions_np)
 
         loggy.info(
-            f'Val predictions for epoch {{epoch: 02d}} saved to {file_path}')
+            f'Val predictions for epoch {self.current_epoch} saved to {file_path}')
 
-    # configure the optimizer
     def configure_optimizers(self):
         if self.optimizer.lower() == "sgd":
             optimizer = torch.optim.SGD(
@@ -165,31 +163,35 @@ class VPRModel(pl.LightningModule):
             raise ValueError(
                 f'Optimizer {self.optimizer} has not been added to "configure_optimizers()"'
             )
-        # scheduler = lr_scheduler.MultiStepLR(
-        #     optimizer, milestones=self.milestones, gamma=self.lr_mult
-        # )
-        return [optimizer]  # , [scheduler]
+        scheduler = lr_scheduler.MultiStepLR(
+            optimizer, milestones=self.milestones, gamma=self.lr_mult
+        )
+        return [optimizer], [scheduler]
+
+    def lr_scheduler_step(self, scheduler, optimizer_idx, metric):
+        # Step the scheduler manually with the epoch
+        scheduler.step()
 
     # configure the optizer step, takes into account the warmpup stage
-    # def optimizer_step(
-    #     self,
-    #     epoch,
-    #     batch_idx,
-    #     optimizer,
-    #     optimizer_idx,
-    #     optimizer_closure,
-    #     on_tpu,
-    #     using_native_amp,
-    #     using_lbfgs,
-    # ):
-    #     # warm up lr
-    #     if self.trainer.global_step < self.warmpup_steps:
-    #         lr_scale = min(
-    #             1.0, float(self.trainer.global_step + 1) / self.warmpup_steps
-    #         )
-    #         for pg in optimizer.param_groups:
-    #             pg["lr"] = lr_scale * self.lr
-    #     optimizer.step(closure=optimizer_closure)
+    def optimizer_step(
+        self,
+        epoch,
+        batch_idx,
+        optimizer,
+        optimizer_idx,
+        optimizer_closure,
+        on_tpu,
+        using_native_amp,
+        using_lbfgs,
+    ):
+        # warm up lr
+        if self.trainer.global_step < self.warmpup_steps:
+            lr_scale = min(
+                1.0, float(self.trainer.global_step + 1) / self.warmpup_steps
+            )
+            for pg in optimizer.param_groups:
+                pg["lr"] = lr_scale * self.lr
+        optimizer.step(closure=optimizer_closure)
 
     #  The loss function call (this method will be called at each training iteration)
     def loss_function(self, descriptors, labels):
@@ -260,7 +262,6 @@ class VPRModel(pl.LightningModule):
         places, _ = batch
         # calculate descriptors
         descriptors = self(places)
-        self.validation_step_outputs.append(descriptors.detach().cpu())
         return descriptors.detach().cpu()
 
     def validation_epoch_end(self, val_step_outputs):
@@ -275,6 +276,8 @@ class VPRModel(pl.LightningModule):
         to calculate recall@K using the ground truth provided.
         """
         dm = self.trainer.datamodule
+
+        loggy.info(f"Validation Epoch {self.current_epoch}")
         # The following line is a hack: if we have only one validation set, then
         # we need to put the outputs in a list (Pytorch Lightning does not do it presently)
         if len(dm.val_datasets) == 1:  # we need to put the outputs in a list
@@ -302,6 +305,9 @@ class VPRModel(pl.LightningModule):
                                                                      )
             del r_list, q_list, feats, num_references, ground_truth
 
+            self.save_predictions_val(
+                predictions, directory='predictions', val_set_name=val_set_name)
+
             self.log(f'{val_set_name}/R1',
                      recalls_dict[1], prog_bar=False, logger=True)
             self.log(f'{val_set_name}/R5',
@@ -311,13 +317,12 @@ class VPRModel(pl.LightningModule):
         places, _ = batch
         # calculate descriptors
         descriptors = self(places)
-        self.test_step_outputs.append(descriptors.detach().cpu())
         return descriptors.detach().cpu()
 
     def test_epoch_end(self, test_step_outputs):
         dm = self.trainer.datamodule
 
-        if len(self.test_step_outputs) == 1:
+        if len(test_step_outputs) == 1:
             test_step_outputs = [test_step_outputs]
 
         for i, (test_set_name, test_dataset) in enumerate(zip(dm.test_set_names, dm.test_datasets)):
@@ -341,7 +346,7 @@ class VPRModel(pl.LightningModule):
                                                                      faiss_gpu=self.faiss_gpu)
 
             # Save predictions to a file
-            self.save_predictions(
+            self.save_predictions_test(
                 predictions, directory='predictions', test_set_name=test_set_name)
 
             del r_list, q_list, feats, num_references, ground_truth
@@ -350,10 +355,6 @@ class VPRModel(pl.LightningModule):
                      recalls_dict[1], prog_bar=False, logger=True)
             self.log(f"{test_set_name}/R5",
                      recalls_dict[5], prog_bar=False, logger=True)
-
-        print('TEST...\n')
-        print(predictions)
-        self.test_step_outputs.clear()
 
 
 class Args:
@@ -409,7 +410,7 @@ class Args:
         self.default_root_dir = f"./LOGS/{self.backbone_arch}"
         self.num_sanity_val_steps = 0
         self.precision = 32
-        self.max_epochs = 1
+        self.max_epochs = 2
         self.check_val_every_n_epoch = 1
         self.reload_dataloaders_every_n_epochs = 1
         self.log_every_n_steps = 1
