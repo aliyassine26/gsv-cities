@@ -83,18 +83,18 @@ def parse_args():
         "--miner_margin", type=float, default=0.1, help="Margin for the miner"
     )
     parser.add_argument(
-        "--faiss_gpu", type=bool, default=False, help="Use FAISS GPU for validation"
+        "--faiss_gpu", type=bool, default=True, help="Use FAISS GPU for validation"
     )
 
     parser.add_argument("--cities", type=parse_list,
                         default=["Barcelona"], help="Cities to use")
     # Data module arguments
     parser.add_argument("--batch_size", type=int,
-                        default=100, help="Batch size")
+                        default=64, help="Batch size")
     parser.add_argument("--img_per_place", type=int,
-                        default=4, help="Images per place")
+                        default=2, help="Images per place")
     parser.add_argument(
-        "--min_img_per_place", type=int, default=4, help="Minimum images per place"
+        "--min_img_per_place", type=int, default=2, help="Minimum images per place"
     )
     parser.add_argument(
         "--shuffle_all",
@@ -179,10 +179,10 @@ def parse_args():
         help="Number of sanity validation steps",
     )
     parser.add_argument(
-        "--precision", type=int, default=16, help="Precision (16 or 32)"
+        "--precision", type=int, default=32, help="Precision (16 or 32)"
     )
     parser.add_argument(
-        "--max_epochs", type=int, default=30, help="Maximum number of epochs"
+        "--max_epochs", type=int, default=1, help="Maximum number of epochs"
     )
     parser.add_argument(
         "--check_val_every_n_epoch",
@@ -202,7 +202,7 @@ def parse_args():
     parser.add_argument(
         "--fast_dev_run",
         type=bool,
-        default=True,
+        default=False,
         help="Fast development run (debugging)",
     )
 
