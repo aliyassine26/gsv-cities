@@ -1,19 +1,22 @@
+from pytorch_lightning.loggers import WandbLogger
+import wandb
+import yaml
+import numpy as np
+from argparse import Namespace
+from src.configs.args import parse_args
+from models import helper
+from dataloaders.GSVCitiesDataloader import GSVCitiesDataModule
 import torch
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.optim import lr_scheduler
 import utils
+import warnings
+warnings.filterwarnings("ignore")
 
-from dataloaders.GSVCitiesDataloader import GSVCitiesDataModule
-from models import helper
-
-from src.configs.args import parse_args
-from argparse import Namespace
-
-import yaml
-import wandb 
-from pytorch_lightning.loggers import WandbLogger
-
+import os
+from datetime import datetime
+import numpy as np
 
 def get_args() -> Namespace:
     parser = parse_args()
@@ -34,11 +37,11 @@ class VPRModel(pl.LightningModule):
         layers_to_freeze=3,
         layers_to_crop=[3, 4],
         # ---- Aggregator
-        agg_arch="ConvAP",  # CosPlace, NetVLAD, GeM, AVG
+        agg_arch="AVG",  # CosPlace, NetVLAD, GeM, AVG
         agg_config={},
         # ---- Train hyperparameters
         lr=0.03,
-        optimizer="sgd",
+        optimizer="adamw",
         weight_decay=1e-3,
         momentum=0.9,
         warmpup_steps=500,
@@ -73,6 +76,7 @@ class VPRModel(pl.LightningModule):
 
         self.save_hyperparameters()  # write hyperparams into a file
         self.validation_step_outputs = []
+        self.test_step_outputs = []
         self.loss_fn = utils.get_loss(loss_name)
         self.miner = utils.get_miner(miner_name, miner_margin)
         self.batch_acc = (
@@ -86,13 +90,40 @@ class VPRModel(pl.LightningModule):
         self.backbone = helper.get_backbone(
             backbone_arch, pretrained, layers_to_freeze, layers_to_crop
         )
-        self.aggregator = helper.get_aggregator(agg_arch, agg_config)
+
+        self.aggregator = helper.get_aggregator(
+            agg_arch, agg_config)  # AVG -> agg_config = {}
 
     # the forward pass of the lightning model
     def forward(self, x):
         x = self.backbone(x)
         x = self.aggregator(x)
         return x
+
+    def save_predictions(self, predictions, directory='predictions', test_set_name='test_set'):
+        """Save the predictions tensor as a .npy file with a timestamp."""
+        # Convert the tensor to a NumPy array
+        predictions_np = predictions.numpy()
+        
+        # Create the directory if it does not exist
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        
+        # Generate the filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        file_name = f"{test_set_name}_{timestamp}.npy"
+
+        # Try this later to add the epoch number to the filename
+        # file_name = f"{test_set_name}_epoch{self.current_epoch}_{timestamp}.npy"
+
+        # Path to save the NumPy array
+        file_path = os.path.join(directory, file_name)
+        
+        # Save the NumPy array as a .npy file
+        np.save(file_path, predictions_np)
+        
+        print(f'Predictions saved to {file_path}')
 
     # configure the optimizer
     def configure_optimizers(self):
@@ -115,10 +146,10 @@ class VPRModel(pl.LightningModule):
             raise ValueError(
                 f'Optimizer {self.optimizer} has not been added to "configure_optimizers()"'
             )
-        scheduler = lr_scheduler.MultiStepLR(
-            optimizer, milestones=self.milestones, gamma=self.lr_mult
-        )
-        return [optimizer], [scheduler]
+        # scheduler = lr_scheduler.MultiStepLR(
+        #     optimizer, milestones=self.milestones, gamma=self.lr_mult
+        # )
+        return [optimizer]  # , [scheduler]
 
     # configure the optizer step, takes into account the warmpup stage
     # def optimizer_step(
@@ -200,7 +231,7 @@ class VPRModel(pl.LightningModule):
         return {"loss": loss}
 
     # This is called at the end of eatch training epoch
-    def on_train_epoch_end(self, training_step_outputs):
+    def on_train_epoch_end(self):
         # we empty the batch_acc list for next epoch
         self.batch_acc = []
 
@@ -210,6 +241,7 @@ class VPRModel(pl.LightningModule):
         places, _ = batch
         # calculate descriptors
         descriptors = self(places)
+        self.validation_step_outputs.append(descriptors.detach().cpu())
         return descriptors.detach().cpu()
 
     def validation_epoch_end(self, val_step_outputs):
@@ -243,7 +275,7 @@ class VPRModel(pl.LightningModule):
             recalls_dict, predictions = utils.get_validation_recalls(r_list=r_list,
                                                                      q_list=q_list,
                                                                      k_values=[
-                                                                         1, 5, 10, 15, 20, 25],
+                                                                         1, 5],
                                                                      gt=ground_truth,
                                                                      print_results=True,
                                                                      dataset_name=val_set_name,
@@ -251,79 +283,123 @@ class VPRModel(pl.LightningModule):
                                                                      )
             del r_list, q_list, feats, num_references, ground_truth
 
-            self.log(f"{val_set_name}/R1", recalls_dict[1], prog_bar=False, logger=True)
-            self.log(f"{val_set_name}/R5", recalls_dict[5], prog_bar=False, logger=True)
-            self.log(
-                f"{val_set_name}/R10", recalls_dict[10], prog_bar=False, logger=True
-            )
-        print("\n\n")
+            self.log(f'{val_set_name}/R1',
+                     recalls_dict[1], prog_bar=False, logger=True)
+            self.log(f'{val_set_name}/R5',
+                     recalls_dict[5], prog_bar=False, logger=True)
 
-        self.validation_step_outputs.clear()
+    def test_step(self, batch, batch_idx, dataloader_idx=0):
+        places, _ = batch
+        # calculate descriptors
+        descriptors = self(places)
+        self.test_step_outputs.append(descriptors.detach().cpu())
+        return descriptors.detach().cpu()
+
+    def test_epoch_end(self, test_step_outputs):
+        dm = self.trainer.datamodule
+
+        if len(self.test_step_outputs) == 1:
+            test_step_outputs = [test_step_outputs]
+
+        for i, (test_set_name, test_dataset) in enumerate(zip(dm.test_set_names, dm.test_datasets)):
+
+            feats = torch.cat(test_step_outputs[i], dim=0)
+
+            num_references = test_dataset.num_references
+            num_queries = test_dataset.num_queries
+            ground_truth = test_dataset.ground_truth
+
+            r_list = feats[:num_references]
+            q_list = feats[num_references:]
+
+            recalls_dict, predictions = utils.get_validation_recalls(r_list=r_list,
+                                                                     q_list=q_list,
+                                                                     k_values=[
+                                                                         1, 5],
+                                                                     gt=ground_truth,
+                                                                     print_results=True,
+                                                                     dataset_name=test_set_name,
+                                                                     faiss_gpu=self.faiss_gpu)
+            
+            # Save predictions to a file
+            self.save_predictions(predictions, directory='predictions', test_set_name=test_set_name)
+
+            del r_list, q_list, feats, num_references, ground_truth
+
+            self.log(f"{test_set_name}/R1",
+                     recalls_dict[1], prog_bar=False, logger=True)
+            self.log(f"{test_set_name}/R5",
+                     recalls_dict[5], prog_bar=False, logger=True)
+
+        print('TEST...\n')
+        print(predictions)
+        self.test_step_outputs.clear()
 
 
-# class Args:
-#     def __init__(self):
-#         # GSVCitiesDataModule parameters
-#         self.batch_size = 32
-#         self.img_per_place = 4
-#         self.min_img_per_place = 4
-#         self.shuffle_all = False
-#         self.random_sample_from_each_place = True
-#         self.image_size = (320, 320)
-#         self.num_workers = 8
-#         self.show_data_stats = True
-#         self.val_set_names = ["sfxs_val"]
+class Args:
+    def __init__(self):
+        # GSVCitiesDataModule parameters
+        self.batch_size = 64
+        self.img_per_place = 2
+        self.min_img_per_place = 2
+        self.shuffle_all = False
+        self.random_sample_from_each_place = True
+        self.image_size = (320, 320)
+        self.num_workers = 8
+        self.show_data_stats = True
+        self.val_set_names = ["sfxs_val"]
+        self.test_set_names = ["sfxs_test", "tokyoxs_test"]
 
-#         # VPRModel parameters
-#         self.backbone_arch = "resnet18"
-#         self.pretrained = True
-#         self.layers_to_freeze = 3
-#         self.layers_to_crop = [3, 4]
+        # VPRModel parameters
+        self.backbone_arch = "resnet18"
+        self.pretrained = True
+        self.layers_to_freeze = 3
+        self.layers_to_crop = [3, 4]
 
-#         # self.agg_arch = "ConvAP"
-#         # self.agg_config = {"in_channels": 2048,
-#         #                    "out_channels": 1024, "s1": 2, "s2": 2}
-#         self.agg_arch = "GeM"
-#         self.agg_config = {"p": 3}
+        # self.agg_arch = "ConvAP"
+        # self.agg_config = {"in_channels": 2048,
+        #                    "out_channels": 1024, "s1": 2, "s2": 2}
+        self.agg_arch = "AVG"
+        self.agg_config = {}
 
-#         self.lr = 0.0002
-#         self.optimizer = "adam"
-#         self.weight_decay = 0
-#         self.momentum = 0.9
-#         self.warmpup_steps = 600
-#         self.milestones = [5, 10, 15, 25]
-#         self.lr_mult = 0.3
+        self.lr = 0.1
+        self.optimizer = "adam"
+        self.weight_decay = 1e-3
+        self.momentum = 0.9
+        self.warmpup_steps = 600
+        self.milestones = [5, 10, 15, 25]
+        self.lr_mult = 0.3
 
-#         self.loss_name = "MultiSimilarityLoss"
-#         self.miner_name = "MultiSimilarityMiner"
-#         self.miner_margin = 0.1
-#         self.faiss_gpu = False
+        self.loss_name = "MultiSimilarityLoss"
+        self.miner_name = "MultiSimilarityMiner"
+        self.miner_margin = 0.1
+        self.faiss_gpu = False
 
-#         # ModelCheckpoint parameters
-#         self.monitor = "sfxx_val/R1"
-#         self.filename = f"{self.backbone_arch}_epoch({{epoch:02d}})_step({{step:04d}})_R1[{{pitts30k_val/R1:.4f}}]_R5[{{sfxs_val/R5:.4f}}]"
-#         self.auto_insert_metric_name = False
-#         self.save_weights_only = True
-#         self.save_top_k = 3
-#         self.mode = "max"
+        # ModelCheckpoint parameters
+        self.monitor = "sfxs_val/R1"
+        self.filename = f"{self.backbone_arch}_epoch({{epoch:02d}})_step({{step:04d}})_R1[{{sfxs_val/R1:.4f}}]_R5[{{sfxs_val/R5:.4f}}]"
+        self.auto_insert_metric_name = False
+        self.save_weights_only = True
+        self.save_top_k = 3
+        self.mode = "max"
 
-#         # Trainer parameters
-#         self.accelerator = "cpu"
-#         self.devices = 1
-#         self.default_root_dir = f"./LOGS/{self.backbone_arch}"
-#         self.num_sanity_val_steps = 0
-#         self.precision = 16
-#         self.max_epochs = 30
-#         self.check_val_every_n_epoch = 1
-#         self.reload_dataloaders_every_n_epochs = 1
-#         self.log_every_n_steps = 1
-#         self.fast_dev_run = True
+        # Trainer parameters
+        self.accelerator = "cpu"
+        self.devices = 1
+        self.default_root_dir = f"./LOGS/{self.backbone_arch}"
+        self.num_sanity_val_steps = 0
+        self.precision = 32
+        self.max_epochs = 1
+        self.check_val_every_n_epoch = 1
+        self.reload_dataloaders_every_n_epochs = 1
+        self.log_every_n_steps = 1
+        self.fast_dev_run = False
 
 
 if __name__ == "__main__":
-    args = get_args()
-    # args = Args()
-    
+    # args = get_args()
+    args = Args()
+
     pl.seed_everything(seed=1, workers=True)
 
     # Load the configuration file
@@ -333,7 +409,7 @@ if __name__ == "__main__":
     # Ensure the API key is in the config
     if 'WANDB_API_KEY' not in config:
         raise KeyError("WANDB_API_KEY not found in the configuration file")
-    
+
     wandb_api_key = config['WANDB_API_KEY']
     # Log in to wandb with the API key
     wandb.login(key=wandb_api_key)
@@ -437,10 +513,13 @@ if __name__ == "__main__":
             checkpoint_cb
         ],  # we run the checkpointing callback (you can add more)
     )
-    
+
     # log the hyperparameters to wandb
     wandb_logger.experiment.config.update(model.hparams)
 
     # we call the trainer, and give it the model and the datamodule
     # now you see the modularity of Pytorch Lighning?
     trainer.fit(model=model, datamodule=datamodule)
+
+    # After training, perform testing
+    trainer.test(model=model, datamodule=datamodule)

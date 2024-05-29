@@ -1,3 +1,4 @@
+
 from pathlib import Path
 import numpy as np
 from PIL import Image
@@ -8,7 +9,6 @@ import sys
 MAIN_PATH = Path(__file__).resolve().parent.parent.parent / "utils"
 sys.path.append(str(MAIN_PATH))
 from config import GT_ROOT, TOKYO_XS_PATH
-
 # NOTE: you need to download the Nordland dataset from  https://surfdrive.surf.nl/files/index.php/s/sbZRXzYe3l0v67W
 # this link is shared and maintained by the authors of VPR_Bench: https://github.com/MubarizZaffar/VPR-Bench
 # the folders named ref and query should reside in DATASET_ROOT path
@@ -35,14 +35,15 @@ class TokyoXSDataset(Dataset):
         self.input_transform = input_transform
 
         # reference images names
-        self.dbImages = np.load(GT_ROOT + "Tokyo_XS/tokyoxs_test_dbImages.npy")
+        self.dbImages = np.load(
+            GT_ROOT + "TOKYO_MINI/tokyoxs_test_dbImages.npy")
 
         # query images names
-        self.qImages = np.load(GT_ROOT + "Tokyo_XS/tokyoxs_test_qImages.npy")
+        self.qImages = np.load(GT_ROOT + "TOKYO_MINI/tokyoxs_test_qImages.npy")
 
         # ground truth
         self.ground_truth = np.load(
-            GT_ROOT + "Tokyo_XS/tokyoxs_test_gtImages.npy", allow_pickle=True
+            GT_ROOT + "TOKYO_MINI/tokyoxs_test_gtImages.npy", allow_pickle=True
         )
 
         # reference images then query images
