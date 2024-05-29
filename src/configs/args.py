@@ -87,7 +87,7 @@ def parse_args():
     )
 
     parser.add_argument("--cities", type=parse_list,
-                        default=["Londonn", "Madrid"], help="Cities to use")
+                        default=["Barcelona"], help="Cities to use")
     # Data module arguments
     parser.add_argument("--batch_size", type=int,
                         default=100, help="Batch size")
@@ -202,7 +202,7 @@ def parse_args():
     parser.add_argument(
         "--fast_dev_run",
         type=bool,
-        default=False,
+        default=True,
         help="Fast development run (debugging)",
     )
 

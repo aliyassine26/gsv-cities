@@ -405,7 +405,7 @@ class Args:
         self.mode = "max"
 
         # Trainer parameters
-        self.accelerator = "cpu"
+        self.accelerator = "gpu"
         self.devices = 1
         self.default_root_dir = f"./LOGS/{self.backbone_arch}"
         self.num_sanity_val_steps = 0
@@ -416,12 +416,12 @@ class Args:
         self.log_every_n_steps = 1
         self.fast_dev_run = False
 
-        self.cities = ["Londonn", "Madrid"]
+        self.cities = ["Barcelona"]
 
 
 if __name__ == "__main__":
-    # args = get_args()
-    args = Args()
+    args = get_args()
+    #args = Args()
 
     pl.seed_everything(seed=1, workers=True)
 
