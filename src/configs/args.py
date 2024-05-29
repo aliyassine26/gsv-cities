@@ -86,6 +86,8 @@ def parse_args():
         "--faiss_gpu", type=bool, default=False, help="Use FAISS GPU for validation"
     )
 
+    parser.add_argument("--cities", type=parse_list,
+                        default=["Londonn", "Madrid"], help="Cities to use")
     # Data module arguments
     parser.add_argument("--batch_size", type=int,
                         default=100, help="Batch size")

@@ -416,6 +416,8 @@ class Args:
         self.log_every_n_steps = 1
         self.fast_dev_run = False
 
+        self.cities = ["Londonn", "Madrid"]
+
 
 if __name__ == "__main__":
     # args = get_args()
@@ -447,7 +449,7 @@ if __name__ == "__main__":
         img_per_place=args.img_per_place,
         min_img_per_place=args.min_img_per_place,
         # you can sppecify cities here or in GSVCitiesDataloader.py
-        cities=["Londonn"],
+        cities=args.cities,
         shuffle_all=args.shuffle_all,
         random_sample_from_each_place=args.random_sample_from_each_place,
         image_size=args.image_size,
