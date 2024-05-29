@@ -302,6 +302,9 @@ class VPRModel(pl.LightningModule):
 
         print('TEST...\n')
         print(predictions)
+
+        torch.save(predictions, f'./predictions/{test_set_name}.pt')
+
         self.test_step_outputs.clear()
 
 
