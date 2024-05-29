@@ -1,3 +1,6 @@
+import logging
+from datetime import datetime
+import os
 from pytorch_lightning.loggers import WandbLogger
 import wandb
 import yaml
@@ -13,10 +16,9 @@ from torch.optim import lr_scheduler
 import utils
 import warnings
 warnings.filterwarnings("ignore")
+loggy = logging.getLogger(__name__)
+loggy.setLevel(logging.INFO)
 
-import os
-from datetime import datetime
-import numpy as np
 
 def get_args() -> Namespace:
     parser = parse_args()
@@ -100,30 +102,47 @@ class VPRModel(pl.LightningModule):
         x = self.aggregator(x)
         return x
 
-    def save_predictions(self, predictions, directory='predictions', test_set_name='test_set'):
+    def save_predictions_test(self, predictions, directory='predictions', test_set_name='test_set'):
         """Save the predictions tensor as a .npy file with a timestamp."""
         # Convert the tensor to a NumPy array
-        predictions_np = predictions.numpy()
-        
+        predictions_np = predictions.cpu().numpy()
+
         # Create the directory if it does not exist
         if not os.path.exists(directory):
             os.makedirs(directory)
-        
+
         # Generate the filename with timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
-        file_name = f"{test_set_name}_{timestamp}.npy"
 
-        # Try this later to add the epoch number to the filename
-        # file_name = f"{test_set_name}_epoch{self.current_epoch}_{timestamp}.npy"
+        file_name = f"{test_set_name}_{timestamp}.npy"
 
         # Path to save the NumPy array
         file_path = os.path.join(directory, file_name)
-        
+
         # Save the NumPy array as a .npy file
         np.save(file_path, predictions_np)
-        
-        print(f'Predictions saved to {file_path}')
+
+        loggy.info(f'Test predictions saved to {file_path}')
+
+    def save_predictions_val(self, predictions, directory='predictions', val_set_name='val_set'):
+        """Save the predictions tensor as a .npy file with a timestamp."""
+        # Convert the tensor to a NumPy array
+        predictions_np = predictions.cpu().numpy()
+
+        # Create the directory if it does not exist
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        file_name = f"{val_set_name}_{self.backbone_arch}_epoch({{epoch: 02d}}).npy"
+
+        # Path to save the NumPy array
+        file_path = os.path.join(directory, file_name)
+
+        # Save the NumPy array as a .npy file
+        np.save(file_path, predictions_np)
+
+        loggy.info(
+            f'Val predictions for epoch {{epoch: 02d}} saved to {file_path}')
 
     # configure the optimizer
     def configure_optimizers(self):
@@ -320,9 +339,10 @@ class VPRModel(pl.LightningModule):
                                                                      print_results=True,
                                                                      dataset_name=test_set_name,
                                                                      faiss_gpu=self.faiss_gpu)
-            
+
             # Save predictions to a file
-            self.save_predictions(predictions, directory='predictions', test_set_name=test_set_name)
+            self.save_predictions(
+                predictions, directory='predictions', test_set_name=test_set_name)
 
             del r_list, q_list, feats, num_references, ground_truth
 
