@@ -1,5 +1,5 @@
-GSV_CITIES_PATH = "/content/drive/MyDrive/GSV_CITIES_DATA/gsv_xs/gsv_xs/train"
+GSV_CITIES_PATH = "/content/gsv_xs/train"
 DF_PATH = "/content/gsv-cities/datasets/gsv_xs/dataframes"
-GT_ROOT = "/content/drive/MyDrive/GSV_CITIES_DATA"
+GT_ROOT = "/content/gsv-cities/datasets/"
 SF_XS_PATH = "/content/sf_xs/"
 TOKYO_XS_PATH = "/content/drive/MyDrive/GSV_CITIES_DATA/tokyo_xs/tokyo_xs/"

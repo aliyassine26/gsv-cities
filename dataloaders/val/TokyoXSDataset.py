@@ -36,14 +36,14 @@ class TokyoXSDataset(Dataset):
 
         # reference images names
         self.dbImages = np.load(
-            GT_ROOT + "/tokyoxs_test_dbImages.npy")
+            GT_ROOT + "Tokyo_XS/tokyoxs_test_dbImages.npy")
 
         # query images names
-        self.qImages = np.load(GT_ROOT + "/tokyoxs_test_qImages.npy")
+        self.qImages = np.load(GT_ROOT + "Tokyo_XS/tokyoxs_test_qImages.npy")
 
         # ground truth
         self.ground_truth = np.load(
-            GT_ROOT + "/tokyoxs_test_gtImages.npy", allow_pickle=True
+            GT_ROOT + "Tokyo_XS/tokyoxs_test_gtImages.npy", allow_pickle=True
         )
 
         # reference images then query images

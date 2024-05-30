@@ -1,6 +1,31 @@
 import argparse
 import json
 
+TRAIN_CITIES = [
+    "Bangkok",
+    "BuenosAires",
+    "LosAngeles",
+    "MexicoCity",
+    "OSL",  # refers to Oslo
+    "Rome",
+    "Barcelona",
+    "Chicago",
+    "Madrid",
+    "Miami",
+    "Phoenix",
+    "TRT",  # refers to Toronto
+    "Boston",
+    "Lisbon",
+    "Medellin",
+    "Minneapolis",
+    "PRG",  # refers to Prague
+    "WashingtonDC",
+    "Brussels",
+    "London",
+    "Melbourne",
+    "Osaka",
+    "PRS",  # refers to Paris
+]
 
 def parse_tuple(input_str):
     return tuple(map(int, input_str.strip("()").split(",")))
@@ -87,7 +112,7 @@ def parse_args():
     )
 
     parser.add_argument("--cities", type=parse_list,
-                        default=["Barcelona"], help="Cities to use")
+                        default=TRAIN_CITIES, help="Cities to use")
     # Data module arguments
     parser.add_argument("--batch_size", type=int,
                         default=64, help="Batch size")
@@ -122,6 +147,13 @@ def parse_args():
         type=parse_list,
         default=["sfxs_val"],
         help="Validation set names",
+    )
+
+    parser.add_argument(
+        "--test_set_names",
+        type=parse_list,
+        default='["sfxs_test", "tokyoxs_test"]' ,
+        help="Test set names",
     )
 
     # ModelCheckpoint arguments

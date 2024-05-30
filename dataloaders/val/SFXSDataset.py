@@ -35,14 +35,14 @@ class SFXSDataset(Dataset):
         self.input_transform = input_transform
 
         # reference images namesf
-        self.dbImages = np.load(GT_ROOT + f"/{which_ds}_dbImages.npy")
+        self.dbImages = np.load(GT_ROOT + f"SF_XS/{which_ds}_dbImages.npy")
 
         # query images names
-        self.qImages = np.load(GT_ROOT + f"/{which_ds}_qImages.npy")
+        self.qImages = np.load(GT_ROOT + f"SF_XS/{which_ds}_qImages.npy")
 
         # ground truth
         self.ground_truth = np.load(
-            GT_ROOT + f"/{which_ds}_gtImages.npy", allow_pickle=True
+            GT_ROOT + f"SF_XS/{which_ds}_gtImages.npy", allow_pickle=True
         )
 
         # reference images then query images
