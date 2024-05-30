@@ -422,7 +422,8 @@ class Args:
 if __name__ == "__main__":
     args = get_args()
     #args = Args()
-
+    print(args)
+    args.fast_dev_run = False
     pl.seed_everything(seed=1, workers=True)
 
     # Load the configuration file
