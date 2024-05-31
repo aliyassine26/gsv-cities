@@ -157,7 +157,7 @@ class GSVCitiesDataModule(pl.LightningDataModule):
                     )
                     raise NotImplementedError
 
-        if stage == "fit" or stage == "test" or stage is None:
+        if stage == "test" or stage is None:
             # load test sets
             self.test_datasets = []
             for test_set_name in self.test_set_names:
@@ -253,7 +253,7 @@ class GSVCitiesDataModule(pl.LightningDataModule):
             print(table.get_string(title="Validation Datasets"))
             print()
 
-        if stage == "test" or stage == "fit":
+        if stage == "test":
             table = PrettyTable()
             table.field_names = ["Data", "Value"]
             table.align["Data"] = "l"
