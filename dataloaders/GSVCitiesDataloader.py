@@ -9,8 +9,7 @@ from prettytable import PrettyTable
 import pytorch_lightning as pl
 
 
-IMAGENET_MEAN_STD = {"mean": [0.485, 0.456,
-                              0.406], "std": [0.229, 0.224, 0.225]}
+IMAGENET_MEAN_STD = {"mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225]}
 
 VIT_MEAN_STD = {"mean": [0.5, 0.5, 0.5], "std": [0.5, 0.5, 0.5]}
 
@@ -95,8 +94,7 @@ class GSVCitiesDataModule(pl.LightningDataModule):
         self.train_transform = T.Compose(
             [
                 T.Resize(image_size, interpolation=T.InterpolationMode.BILINEAR),
-                T.RandAugment(
-                    num_ops=3, interpolation=T.InterpolationMode.BILINEAR),
+                T.RandAugment(num_ops=3, interpolation=T.InterpolationMode.BILINEAR),
                 T.ToTensor(),
                 T.Normalize(mean=self.mean_dataset, std=self.std_dataset),
             ]
@@ -123,7 +121,7 @@ class GSVCitiesDataModule(pl.LightningDataModule):
             "drop_last": False,
             "pin_memory": True,
             "shuffle": self.shuffle_all,
-            #"persistent_workers": True,
+            # "persistent_workers": True,
         }
 
         self.valid_loader_config = {
@@ -132,14 +130,14 @@ class GSVCitiesDataModule(pl.LightningDataModule):
             "drop_last": False,
             "pin_memory": True,
             "shuffle": False,
-            #"persistent_workers": True,
+            # "persistent_workers": True,
         }
 
-    def setup(self, stage) -> None:
+    def setup(self, stage=None) -> None:
         """
         Setup function to prepare the data loaders and validation sets based on the stage.
         """
-        if stage == "fit":
+        if stage == "fit" or stage is None:
             # load train dataloader with reload routine
             self.reload()
 
@@ -159,6 +157,7 @@ class GSVCitiesDataModule(pl.LightningDataModule):
                     )
                     raise NotImplementedError
 
+        if stage == "fit" or stage == "test" or stage is None:
             # load test sets
             self.test_datasets = []
             for test_set_name in self.test_set_names:
@@ -175,15 +174,14 @@ class GSVCitiesDataModule(pl.LightningDataModule):
                             input_transform=self.test_transform,
                         )
                     )
-
                 else:
                     print(
                         f"Test set {test_set_name} does not exist or has not been implemented yet"
                     )
                     raise NotImplementedError
 
-            if self.show_data_stats:
-                self.print_stats()
+        if self.show_data_stats:
+            self.print_stats(stage)
 
     def reload(self) -> None:
         """
@@ -221,69 +219,70 @@ class GSVCitiesDataModule(pl.LightningDataModule):
         """
         test_dataloaders = []
         for test_dataset in self.test_datasets:
-            test_dataloaders.append(
-                DataLoader(dataset=test_dataset)
-            )
+            test_dataloaders.append(DataLoader(dataset=test_dataset))
         return test_dataloaders
 
-    def print_stats(self) -> None:
+    def print_stats(self, stage) -> None:
         """
         Generate statistics and print them in a tabular format for the training and validation datasets.
         """
-        print()  # print a new line
-        table = PrettyTable()
-        table.field_names = ["Data", "Value"]
-        table.align["Data"] = "l"
-        table.align["Value"] = "l"
-        table.header = False
-        table.add_row(["# of cities", f"{len(TRAIN_CITIES)}"])
-        table.add_row(["# of places", f"{self.train_dataset.__len__()}"])
-        table.add_row(["# of images", f"{self.train_dataset.total_nb_images}"])
-        print(table.get_string(title="Training Dataset"))
-        print()
+        if stage == "fit":
+            print()  # print a new line
+            table = PrettyTable()
+            table.field_names = ["Data", "Value"]
+            table.align["Data"] = "l"
+            table.align["Value"] = "l"
+            table.header = False
+            table.add_row(["# of cities", f"{len(TRAIN_CITIES)}"])
+            table.add_row(["# of places", f"{self.train_dataset.__len__()}"])
+            table.add_row(["# of images", f"{self.train_dataset.total_nb_images}"])
+            print(table.get_string(title="Training Dataset"))
+            print()
 
-        table = PrettyTable()
-        table.field_names = ["Data", "Value"]
-        table.align["Data"] = "l"
-        table.align["Value"] = "l"
-        table.header = False
-        for i, val_set_name in enumerate(self.val_set_names):
-            table.add_row([f"Validation set {i+1}", f"{val_set_name}"])
-            table.add_row(
-                ["# of Queries", f'{self.val_datasets[i].num_queries}'])
-            table.add_row(
-                ["# of References", f'{self.val_datasets[i].num_references}'])
-        print(table.get_string(title="Validation Datasets"))
-        print()
+            table = PrettyTable()
+            table.field_names = ["Data", "Value"]
+            table.align["Data"] = "l"
+            table.align["Value"] = "l"
+            table.header = False
+            for i, val_set_name in enumerate(self.val_set_names):
+                table.add_row([f"Validation set {i+1}", f"{val_set_name}"])
+                table.add_row(["# of Queries", f"{self.val_datasets[i].num_queries}"])
+                table.add_row(
+                    ["# of References", f"{self.val_datasets[i].num_references}"]
+                )
+            print(table.get_string(title="Validation Datasets"))
+            print()
 
-        table = PrettyTable()
-        table.field_names = ["Data", "Value"]
-        table.align["Data"] = "l"
-        table.align["Value"] = "l"
-        table.header = False
-        for i, test_set_name in enumerate(self.test_set_names):
-            table.add_row([f"Test set {i+1}", f"{test_set_name}"])
-            table.add_row(
-                ["# of Queries", f'{self.test_datasets[i].num_queries}'])
-            table.add_row(
-                ["# of References", f'{self.test_datasets[i].num_references}'])
-            table.add_row(["", ""])
-        print(table.get_string(title="Test Datasets"))
-        print()
+        if stage == "test" or stage == "fit":
+            table = PrettyTable()
+            table.field_names = ["Data", "Value"]
+            table.align["Data"] = "l"
+            table.align["Value"] = "l"
+            table.header = False
+            for i, test_set_name in enumerate(self.test_set_names):
+                table.add_row([f"Test set {i+1}", f"{test_set_name}"])
+                table.add_row(["# of Queries", f"{self.test_datasets[i].num_queries}"])
+                table.add_row(
+                    ["# of References", f"{self.test_datasets[i].num_references}"]
+                )
+                table.add_row(["", ""])
+            print(table.get_string(title="Test Datasets"))
+            print()
 
-        table = PrettyTable()
-        table.field_names = ["Data", "Value"]
-        table.align["Data"] = "l"
-        table.align["Value"] = "l"
-        table.header = False
-        table.add_row(
-            ["Batch size (PxK)", f"{self.batch_size}x{self.img_per_place}"])
-        table.add_row(
-            ["# of iterations",
-                f"{self.train_dataset.__len__() // self.batch_size}"]
-        )
-        table.add_row(["Image size", f"{self.image_size}"])
-        print(table.get_string(title="Training config"))
+            table = PrettyTable()
+            table.field_names = ["Data", "Value"]
+            table.align["Data"] = "l"
+            table.align["Value"] = "l"
+            table.header = False
+            table.add_row(
+                ["Batch size (PxK)", f"{self.batch_size}x{self.img_per_place}"]
+            )
+            # table.add_row(
+            #     ["# of iterations",
+            #         f"{self.train_dataset.__len__() // self.batch_size}"]
+            # )
+            table.add_row(["Image size", f"{self.image_size}"])
+            print(table.get_string(title="Training config"))
 
 
 if __name__ == "__main__":

@@ -15,6 +15,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.optim import lr_scheduler
 import utils
 import warnings
+
 warnings.filterwarnings("ignore")
 loggy = logging.getLogger(__name__)
 loggy.setLevel(logging.INFO)
@@ -93,7 +94,8 @@ class VPRModel(pl.LightningModule):
         )
 
         self.aggregator = helper.get_aggregator(
-            agg_arch, agg_config)  # AVG -> agg_config = {}
+            agg_arch, agg_config
+        )  # AVG -> agg_config = {}
 
     # the forward pass of the lightning model
     def forward(self, x):
@@ -101,7 +103,9 @@ class VPRModel(pl.LightningModule):
         x = self.aggregator(x)
         return x
 
-    def save_predictions_test(self, predictions, directory='predictions', test_set_name='test_set'):
+    def save_predictions_test(
+        self, predictions, directory="predictions", test_set_name="test_set"
+    ):
         """Save the predictions tensor as a .npy file with a timestamp."""
         # Convert the tensor to a NumPy array
         predictions_np = predictions.cpu().numpy()
@@ -121,9 +125,11 @@ class VPRModel(pl.LightningModule):
         # Save the NumPy array as a .npy file
         np.save(file_path, predictions_np)
 
-        loggy.info(f'Test predictions saved to {file_path}')
+        loggy.info(f"Test predictions saved to {file_path}")
 
-    def save_predictions_val(self, predictions, directory='predictions', val_set_name='val_set'):
+    def save_predictions_val(
+        self, predictions, directory="predictions", val_set_name="val_set"
+    ):
         """Save the predictions tensor as a .npy file with a timestamp."""
         # Convert the tensor to a NumPy array
         predictions_np = predictions.cpu().numpy()
@@ -141,7 +147,8 @@ class VPRModel(pl.LightningModule):
         np.save(file_path, predictions_np)
 
         loggy.info(
-            f'Val predictions for epoch {self.current_epoch} saved to {file_path}')
+            f"Val predictions for epoch {self.current_epoch} saved to {file_path}"
+        )
 
     def configure_optimizers(self):
         if self.optimizer.lower() == "sgd":
@@ -267,10 +274,10 @@ class VPRModel(pl.LightningModule):
     def validation_epoch_end(self, val_step_outputs):
         """at the end of each validation epoch
         descriptors are returned in their order
-        depending on how the validation dataset is implemented 
+        depending on how the validation dataset is implemented
         for this project (MSLS val, Pittburg val), it is always references then queries.
-        For example, if we have n references and m queries, we will get 
-        the descriptors for each val_dataset in a list as follows: 
+        For example, if we have n references and m queries, we will get
+        the descriptors for each val_dataset in a list as follows:
         [R1, R2, ..., Rn, Q1, Q2, ..., Qm]
         we then split it to references=[R1, R2, ..., Rn] and queries=[Q1, Q2, ..., Qm]
         to calculate recall@K using the ground truth provided.
@@ -283,7 +290,9 @@ class VPRModel(pl.LightningModule):
         if len(dm.val_datasets) == 1:  # we need to put the outputs in a list
             val_step_outputs = [val_step_outputs]
 
-        for i, (val_set_name, val_dataset) in enumerate(zip(dm.val_set_names, dm.val_datasets)):
+        for i, (val_set_name, val_dataset) in enumerate(
+            zip(dm.val_set_names, dm.val_datasets)
+        ):
             feats = torch.concat(val_step_outputs[i], dim=0)
 
             num_references = val_dataset.num_references
@@ -291,27 +300,26 @@ class VPRModel(pl.LightningModule):
             ground_truth = val_dataset.ground_truth
 
             # split to ref and queries
-            r_list = feats[: num_references]
+            r_list = feats[:num_references]
             q_list = feats[num_references:]
 
-            recalls_dict, predictions = utils.get_validation_recalls(r_list=r_list,
-                                                                     q_list=q_list,
-                                                                     k_values=[
-                                                                         1, 5],
-                                                                     gt=ground_truth,
-                                                                     print_results=True,
-                                                                     dataset_name=val_set_name,
-                                                                     faiss_gpu=self.faiss_gpu
-                                                                     )
+            recalls_dict, predictions = utils.get_validation_recalls(
+                r_list=r_list,
+                q_list=q_list,
+                k_values=[1, 5],
+                gt=ground_truth,
+                print_results=True,
+                dataset_name=val_set_name,
+                faiss_gpu=self.faiss_gpu,
+            )
             del r_list, q_list, feats, num_references, ground_truth
 
             self.save_predictions_val(
-                predictions, directory='predictions', val_set_name=val_set_name)
+                predictions, directory="predictions", val_set_name=val_set_name
+            )
 
-            self.log(f'{val_set_name}/R1',
-                     recalls_dict[1], prog_bar=False, logger=True)
-            self.log(f'{val_set_name}/R5',
-                     recalls_dict[5], prog_bar=False, logger=True)
+            self.log(f"{val_set_name}/R1", recalls_dict[1], prog_bar=False, logger=True)
+            self.log(f"{val_set_name}/R5", recalls_dict[5], prog_bar=False, logger=True)
 
     def test_step(self, batch, batch_idx, dataloader_idx=0):
         places, _ = batch
@@ -325,7 +333,9 @@ class VPRModel(pl.LightningModule):
         if len(test_step_outputs) == 1:
             test_step_outputs = [test_step_outputs]
 
-        for i, (test_set_name, test_dataset) in enumerate(zip(dm.test_set_names, dm.test_datasets)):
+        for i, (test_set_name, test_dataset) in enumerate(
+            zip(dm.test_set_names, dm.test_datasets)
+        ):
 
             feats = torch.cat(test_step_outputs[i], dim=0)
 
@@ -336,25 +346,29 @@ class VPRModel(pl.LightningModule):
             r_list = feats[:num_references]
             q_list = feats[num_references:]
 
-            recalls_dict, predictions = utils.get_validation_recalls(r_list=r_list,
-                                                                     q_list=q_list,
-                                                                     k_values=[
-                                                                         1, 5],
-                                                                     gt=ground_truth,
-                                                                     print_results=True,
-                                                                     dataset_name=test_set_name,
-                                                                     faiss_gpu=self.faiss_gpu)
+            recalls_dict, predictions = utils.get_validation_recalls(
+                r_list=r_list,
+                q_list=q_list,
+                k_values=[1, 5],
+                gt=ground_truth,
+                print_results=True,
+                dataset_name=test_set_name,
+                faiss_gpu=self.faiss_gpu,
+            )
 
             # Save predictions to a file
             self.save_predictions_test(
-                predictions, directory='predictions', test_set_name=test_set_name)
+                predictions, directory="predictions", test_set_name=test_set_name
+            )
 
             del r_list, q_list, feats, num_references, ground_truth
 
-            self.log(f"{test_set_name}/R1",
-                     recalls_dict[1], prog_bar=False, logger=True)
-            self.log(f"{test_set_name}/R5",
-                     recalls_dict[5], prog_bar=False, logger=True)
+            self.log(
+                f"{test_set_name}/R1", recalls_dict[1], prog_bar=False, logger=True
+            )
+            self.log(
+                f"{test_set_name}/R5", recalls_dict[5], prog_bar=False, logger=True
+            )
 
 
 class Args:
@@ -421,20 +435,20 @@ class Args:
 
 if __name__ == "__main__":
     args = get_args()
-    #args = Args()
+    # args = Args()
     print(args)
     args.fast_dev_run = False
     pl.seed_everything(seed=1, workers=True)
 
     # Load the configuration file
-    with open('./src/configs/secret.yml', 'r') as f:
+    with open("./src/configs/secret.yml", "r") as f:
         config = yaml.safe_load(f)
 
     # Ensure the API key is in the config
-    if 'WANDB_API_KEY' not in config:
+    if "WANDB_API_KEY" not in config:
         raise KeyError("WANDB_API_KEY not found in the configuration file")
 
-    wandb_api_key = config['WANDB_API_KEY']
+    wandb_api_key = config["WANDB_API_KEY"]
     # Log in to wandb with the API key
     wandb.login(key=wandb_api_key)
 
@@ -543,7 +557,18 @@ if __name__ == "__main__":
 
     # we call the trainer, and give it the model and the datamodule
     # now you see the modularity of Pytorch Lighning?
-    trainer.fit(model=model, datamodule=datamodule)
 
-    # After training, perform testing
-    trainer.test(model=model, datamodule=datamodule)
+    if args.expirement_phase == "train":
+        trainer.fit(model=model, datamodule=datamodule)
+
+    elif args.experiment_phase == "test":
+        model_path = args.model_path
+        model_c = model.load_from_checkpoint(model_path)
+
+        # After training, perform testing
+        trainer.test(model=model_c, datamodule=datamodule)
+    elif args.experiment_phase == "all":
+        trainer.fit(model=model, datamodule=datamodule)
+        trainer.test(model=model, datamodule=datamodule)
+    else:
+        raise ValueError(f"Experiment phase {args.experiment_phase} not recognized")

@@ -27,6 +27,7 @@ TRAIN_CITIES = [
     "PRS",  # refers to Paris
 ]
 
+
 def parse_tuple(input_str):
     return tuple(map(int, input_str.strip("()").split(",")))
 
@@ -72,14 +73,10 @@ def parse_args():
         default={},
         help="Configuration for the aggregator",
     )
-    parser.add_argument("--lr", type=float, default=0.0002,
-                        help="Learning rate")
-    parser.add_argument("--optimizer", type=str,
-                        default="adam", help="Optimizer type")
-    parser.add_argument("--weight_decay", type=float,
-                        default=0, help="Weight decay")
-    parser.add_argument("--momentum", type=float,
-                        default=0.9, help="Momentum for SGD")
+    parser.add_argument("--lr", type=float, default=0.0002, help="Learning rate")
+    parser.add_argument("--optimizer", type=str, default="adam", help="Optimizer type")
+    parser.add_argument("--weight_decay", type=float, default=0, help="Weight decay")
+    parser.add_argument("--momentum", type=float, default=0.9, help="Momentum for SGD")
     parser.add_argument(
         "--warmpup_steps", type=int, default=600, help="Number of warmpup steps"
     )
@@ -111,13 +108,12 @@ def parse_args():
         "--faiss_gpu", type=bool, default=True, help="Use FAISS GPU for validation"
     )
 
-    parser.add_argument("--cities", type=parse_list,
-                        default=TRAIN_CITIES, help="Cities to use")
+    parser.add_argument(
+        "--cities", type=parse_list, default=TRAIN_CITIES, help="Cities to use"
+    )
     # Data module arguments
-    parser.add_argument("--batch_size", type=int,
-                        default=64, help="Batch size")
-    parser.add_argument("--img_per_place", type=int,
-                        default=2, help="Images per place")
+    parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
+    parser.add_argument("--img_per_place", type=int, default=2, help="Images per place")
     parser.add_argument(
         "--min_img_per_place", type=int, default=2, help="Minimum images per place"
     )
@@ -150,9 +146,22 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--model_path",
+        type=str,
+        default="",
+        help="Path to the model checkpoint",
+    )
+    parser.add_argument(
+        "--expirement_phase",
+        type=str,
+        default="train",
+        help="Experiment name",
+    )
+
+    parser.add_argument(
         "--test_set_names",
         type=parse_list,
-        default='["sfxs_test", "tokyoxs_test"]' ,
+        default='["sfxs_test", "tokyoxs_test"]',
         help="Test set names",
     )
 
