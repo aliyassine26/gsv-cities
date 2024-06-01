@@ -56,7 +56,7 @@ class GSVCitiesDataModule(pl.LightningDataModule):
         batch_sampler: Sampler = None,
         random_sample_from_each_place: bool = True,
         val_set_names: list = ["sfxs_val"],
-        test_set_names: list = ["tokyoxs_test", "sfxs_test"],
+        test_set_names: list = ["tokyoxs_test", "sfxs_test", "sfxs_val"],
     ):
         """
         Initializes the data loader with the specified parameters.
@@ -163,11 +163,18 @@ class GSVCitiesDataModule(pl.LightningDataModule):
             # load test sets
             self.test_datasets = []
             for test_set_name in self.test_set_names:
-                if "sfxs" in test_set_name.lower():
+                if "sfxs_test" in test_set_name.lower():
                     self.test_datasets.append(
                         SFXSDataset(
                             which_ds=test_set_name,
                             input_transform=self.test_transform,
+                        )
+                    )
+                elif "sfxs_val" in test_set_name.lower():
+                    self.test_datasets.append(
+                        SFXSDataset(
+                            which_ds=test_set_name,
+                            input_transform=self.valid_transform,
                         )
                     )
                 elif "tokyoxs" in test_set_name.lower():
