@@ -59,6 +59,56 @@ class ImageLoader:
 
         plt.show()
 
+    def show_all_queries_with_predictions(self, query_indices):
+        """Show specified query images and their corresponding predictions in a single figure."""
+        num_queries = len(query_indices)
+        # Including the query image
+        num_predictions = max(
+            len(self.predictions[i]) for i in query_indices) + 1
+
+        fig, axes = plt.subplots(num_queries, num_predictions, figsize=(
+            num_predictions * 5, num_queries * 5))
+
+        for row, query_index in enumerate(query_indices):
+            query_image_path = os.path.join(
+                self.images_directory, self.queries[query_index])
+            query_image = plt.imread(query_image_path)
+            query_predictions = self.predictions[query_index]
+
+            axes[row, 0].add_patch(patches.Rectangle(
+                (0, 0), 1, 1, transform=axes[row, 0].transAxes, color='blue', linewidth=6, fill=False))
+            axes[row, 0].imshow(query_image)
+            if row == 0:
+                axes[row, 0].set_title(f"Queries ", weight='bold')
+            axes[row, 0].axis('off')
+
+            for col, prediction_index in enumerate(query_predictions):
+                prediction_image_path = os.path.join(
+                    self.images_directory, self.db_images[prediction_index])
+                prediction_image = plt.imread(prediction_image_path)
+
+                if self.gt_images is not None and prediction_index in self.gt_images[query_index]:
+                    gt_color = 'green'
+                else:
+                    gt_color = 'red'
+
+                rect = patches.Rectangle(
+                    (0, 0), 1, 1, transform=axes[row, col+1].transAxes, color=gt_color, linewidth=6, fill=False)  # Thicker patch
+                axes[row, col+1].add_patch(rect)
+                axes[row, col+1].imshow(prediction_image)
+                if row == 0:
+                    axes[row, col +
+                         1].set_title(f'Prediction {col+1}', weight='bold')
+                axes[row, col+1].axis('off')
+
+            # Hide unused subplots
+            for j in range(len(query_predictions) + 1, num_predictions):
+                axes[row, j].axis('off')
+
+        # Adjust layout to fit the title
+        plt.tight_layout()
+        plt.show()
+
     def get_image_path(self, index):
         """Get the path of the image corresponding to the given index in the database."""
         return self.db_images[index]
