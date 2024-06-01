@@ -152,7 +152,7 @@ def parse_args():
         help="Path to the model checkpoint",
     )
     parser.add_argument(
-        "--expirement_phase",
+        "--experiment_phase",
         type=str,
         default="train",
         help="Experiment name",

@@ -558,7 +558,7 @@ if __name__ == "__main__":
     # we call the trainer, and give it the model and the datamodule
     # now you see the modularity of Pytorch Lighning?
 
-    if args.expirement_phase == "train":
+    if args.experiment_phase == "train":
         trainer.fit(model=model, datamodule=datamodule)
 
     elif args.experiment_phase == "test":
