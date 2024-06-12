@@ -68,6 +68,10 @@ def get_miner(miner_name: str, margin: float = 0.1) -> miners.BaseMiner:
         return miners.PairMarginMiner(
             pos_margin=0.7, neg_margin=0.3, distance=DotProductSimilarity()
         )
+    if miner_name == "UniformHistogramMiner":
+        return miners.UniformHistogramMiner(num_bins=100, 
+                            pos_per_bin=10, 
+                            neg_per_bin=10)
     if miner_name == "BatchHardMiner":
         return miners.BatchHardMiner()
     return None
