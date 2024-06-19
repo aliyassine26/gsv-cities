@@ -75,3 +75,10 @@ def get_miner(miner_name: str, margin: float = 0.1) -> miners.BaseMiner:
     if miner_name == "BatchHardMiner":
         return miners.BatchHardMiner()
     return None
+
+if __name__ == "__main__":
+    # Example usage
+    loss = get_loss('TripletMarginLoss')
+    miner = get_miner('TripletMarginMiner')
+    print(loss)
+    print(miner)
