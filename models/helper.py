@@ -76,6 +76,7 @@ def get_aggregator(agg_arch: str = "AVG", agg_config: dict = {}) -> nn.Module:
 
     elif "convap" in agg_arch.lower():
         assert "in_channels" in agg_config
+        assert "out_channels" in agg_config
         return aggregators.ConvAP(**agg_config)
 
     elif "mixvpr" in agg_arch.lower():

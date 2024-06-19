@@ -518,8 +518,12 @@ if __name__ == "__main__":
         faiss_gpu=args.faiss_gpu,
     )
 
+    # in_channels and/or in_dim depend on the backbone architecture (in our case resnet18 it is 256 (512//2)) 
     if model.agg_arch == "Cosplace":
-        model.agg_config = {"in_dim":2048, "out_dim":512}
+        model.agg_config = {"in_dim":256, "out_dim":256}
+    elif model.agg_arch == "ConvAP":
+        # We changed the default value of out_channels to 64 in the ConvAP class to reduce computation cost
+        model.agg_config = {"in_channels":256, "out_channels":64}
     else:
         model.agg_config = {}
 
