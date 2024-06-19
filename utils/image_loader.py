@@ -129,3 +129,63 @@ class ImageLoader:
     def save_results(self, output_file):
         """Save the predictions to a file."""
         np.save(output_file, self.predictions)
+
+    def show_ground_truth(self, query_indices):
+        """Show the ground truth for the given query index."""
+        num_queries = len(query_indices)
+        # Including the query image
+        num_gts = max(
+            len(self.gt_images[i]) for i in query_indices) + 1
+
+        fig, axes = plt.subplots(num_queries, num_gts, figsize=(
+            num_gts * 5, num_queries * 5))
+
+        for row, query_index in enumerate(query_indices):
+            query_image_path = os.path.join(
+                self.images_directory, self.queries[query_index])
+            query_image = plt.imread(query_image_path)
+            query_gt_images = self.gt_images[query_index]
+
+            axes[row, 0].add_patch(patches.Rectangle(
+                (0, 0), 1, 1, transform=axes[row, 0].transAxes, color='blue', linewidth=6, fill=False))
+            axes[row, 0].imshow(query_image)
+            if row == 0:
+                axes[row, 0].set_title(f"Queries ", weight='bold')
+            axes[row, 0].axis('off')
+
+            for col, prediction_index in enumerate(query_gt_images):
+                prediction_image_path = os.path.join(
+                    self.images_directory, self.db_images[prediction_index])
+                prediction_image = plt.imread(prediction_image_path)
+
+                if self.gt_images is not None and prediction_index in self.gt_images[query_index]:
+                    gt_color = 'green'
+                else:
+                    gt_color = 'red'
+
+                rect = patches.Rectangle(
+                    (0, 0), 1, 1, transform=axes[row, col+1].transAxes, color=gt_color, linewidth=6, fill=False)  # Thicker patch
+                axes[row, col+1].add_patch(rect)
+                axes[row, col+1].imshow(prediction_image)
+                if row == 0:
+                    axes[row, col +
+                         1].set_title(f'Prediction {col+1}', weight='bold')
+                axes[row, col+1].axis('off')
+
+            # Hide unused subplots
+            for j in range(len(query_gt_images) + 1, num_gts):
+                axes[row, j].axis('off')
+
+        # Adjust layout to fit the title
+        plt.tight_layout()
+        plt.show()
+
+    def print_gt_stats(self):
+        ct = 0
+        for x in range(6):
+            gtx = [1 if len(self.gt_images[i]) ==
+                   x else 0 for i in range(len(self.gt_images))]
+            ct += sum(gtx)
+            print(
+                f"Number of queries with {x} ground truth images: {sum(gtx)}")
+        print(f"Total number of queries with less than 5: {ct}")
