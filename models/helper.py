@@ -60,8 +60,8 @@ def get_aggregator(agg_arch: str = "AVG", agg_config: dict = {}) -> nn.Module:
     """
 
     if "cosplace" in agg_arch.lower():
-        assert "in_dim" in agg_config
-        assert "out_dim" in agg_config
+        assert "in_dim" in agg_config #2048
+        assert "out_dim" in agg_config #512
         return aggregators.CosPlace(**agg_config)
 
     elif "avg" in agg_arch.lower():

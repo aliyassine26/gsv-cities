@@ -518,6 +518,13 @@ if __name__ == "__main__":
         faiss_gpu=args.faiss_gpu,
     )
 
+    if model.agg_arch == "Cosplace":
+        model.agg_config = {"in_dim":2048, "out_dim":512}
+    else:
+        model.agg_config = {}
+
+    print(model.agg_config)
+
     # model params saving using Pytorch Lightning
     # we save the best 3 models accoring to Recall@1 on pittsburg val
     checkpoint_cb = ModelCheckpoint(
