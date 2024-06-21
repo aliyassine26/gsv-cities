@@ -85,7 +85,7 @@ def get_miner(miner_name: str, margin: float = 0.1) -> miners.BaseMiner:
     if miner_name == "BatchEasyHardMiner":
         return miners.BatchEasyHardMiner()
     if miner_name == "AngularMiner":
-        return miners.AngularMiner()
+        return miners.AngularMiner(angle=20)
     
     return None
 
