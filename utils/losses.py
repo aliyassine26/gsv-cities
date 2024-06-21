@@ -80,11 +80,13 @@ def get_miner(miner_name: str, margin: float = 0.1) -> miners.BaseMiner:
         )
     if miner_name == "BatchHardMiner":
         return miners.BatchHardMiner()
-
     if miner_name == "DistanceWeightedMiner":
         return miners.DistanceWeightedMiner(cutoff=0.5, nonzero_loss_cutoff=1.4)
     if miner_name == "BatchEasyHardMiner":
         return miners.BatchEasyHardMiner()
+    if miner_name == "AngularMiner":
+        return miners.AngularMiner()
+    
     return None
 
 
