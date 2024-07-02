@@ -84,7 +84,7 @@ def get_aggregator(agg_arch: str = "AVG", agg_config: dict = {}) -> nn.Module:
         assert "out_channels" in agg_config
         assert "in_h" in agg_config
         assert "in_w" in agg_config
-        assert "mix_depth" in agg_config
+        # assert "mix_depth" in agg_config
         return aggregators.MixVPR(**agg_config)
 
 # -------------------------------------

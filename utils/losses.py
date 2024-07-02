@@ -44,6 +44,12 @@ def get_loss(loss_name: str) -> losses.BaseMetricLossFunction:
             smooth_loss=False,
             triplets_per_anchor="all",
         )
+    if loss_name == "ArcFaceLoss":
+        return losses.ArcFaceLoss(
+            num_classes=10, embedding_size=512, margin=0.5, scale=64
+        )
+    if loss_name == "AngularLoss":
+        return losses.AngularLoss(alpha=40)
     raise NotImplementedError(f"Sorry, <{loss_name}> loss function is not implemented!")
 
 
@@ -69,16 +75,23 @@ def get_miner(miner_name: str, margin: float = 0.1) -> miners.BaseMiner:
             pos_margin=0.7, neg_margin=0.3, distance=DotProductSimilarity()
         )
     if miner_name == "UniformHistogramMiner":
-        return miners.UniformHistogramMiner(num_bins=100, 
-                            pos_per_bin=10, 
-                            neg_per_bin=10)
+        return miners.UniformHistogramMiner(
+            num_bins=100, pos_per_bin=10, neg_per_bin=10
+        )
     if miner_name == "BatchHardMiner":
         return miners.BatchHardMiner()
+    if miner_name == "DistanceWeightedMiner":
+        return miners.DistanceWeightedMiner(cutoff=0.5, nonzero_loss_cutoff=1.4)
+    if miner_name == "BatchEasyHardMiner":
+        return miners.BatchEasyHardMiner()
+    if miner_name == "AngularMiner":
+        return miners.AngularMiner(angle=20)
+    
     return None
+
 
 if __name__ == "__main__":
     # Example usage
-    loss = get_loss('TripletMarginLoss')
-    miner = get_miner('TripletMarginMiner')
-    print(loss)
-    print(miner)
+    loss = get_loss("ArcFaceLoss")
+    print("PARAMTERS:", loss.parameters())
+    miner = get_miner("TripletMarginMiner")
