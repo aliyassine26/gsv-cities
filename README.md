@@ -1,4 +1,4 @@
-# Enhanced Visual Place Recognition with GSV-Cities
+# Enhanced VPR with Miners, Losses, and Aggregators using GSV-Cities
 
 This repository contains the code and resources for our enhanced visual place recognition project, building on the foundational work of the GSV-Cities report. Our extensions include various miners, loss functions, and aggregation modules to improve the performance of visual geo-localization systems
 
@@ -165,7 +165,7 @@ Visualization of the prediction files resultiing from testing can be visualized 
 
 ## Acknowledgements
 
-This project builds on the foundational work of Ali-bey, Amar, Chaib-draa, Brahim, and Giguère, Philippe in their paper "GSV-Cities: Toward Appropriate Supervised Visual Place Recognition". We extend our gratitude to the original authors for their significant contributions to the field.We would like to extend our sincere gratitude to Professor Barbara Caputo and Teaching Assistant Gabrielle Trivigno for their invaluable guidance, support, and insights throughout the course of this project. Their expertise and encouragement have been instrumental in the successful completion of our work.
+This project builds on the foundational work of Ali-bey, Amar, Chaib-draa, Brahim, and Giguère, Philippe in their paper ["GSV-Cities: Toward Appropriate Supervised Visual Place Recognition"](https://arxiv.org/abs/2210.10239). We extend our gratitude to the original authors for their significant contributions to the field.We would like to extend our sincere gratitude to [Professor Barbara Caputo](https://www.polito.it/personale?p=barbara.caputo) and Teaching Assistant [Gabriele Trivigno](https://www.polito.it/personale?p=gabriele.trivigno) for their invaluable guidance, support, and insights throughout the course of this project. Their expertise and encouragement have been instrumental in the successful completion of our work.
 
 ## References
 
