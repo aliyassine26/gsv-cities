@@ -13,7 +13,7 @@ def get_backbone(
     """Helper function that returns the backbone given its name
 
     Args:
-        backbone_arch (str, optional): . Defaults to 'resnet50'.
+        backbone_arch (str, optional): . Defaults to 'resnet18'.
         pretrained (bool, optional): . Defaults to True.
         layers_to_freeze (int, optional): . Defaults to 2.
         layers_to_crop (list, optional): This is mostly used with ResNet where we sometimes need to crop the last residual block (ex. [4]). Defaults to [].
@@ -24,25 +24,6 @@ def get_backbone(
     if "resnet" in backbone_arch.lower():
         return backbones.ResNet(
             backbone_arch, pretrained, layers_to_freeze, layers_to_crop
-        )
-
-    elif "efficient" in backbone_arch.lower():
-        if "_b" in backbone_arch.lower():
-            return backbones.EfficientNet(
-                backbone_arch, pretrained, layers_to_freeze + 2
-            )
-        else:
-            return backbones.EfficientNet(
-                model_name="efficientnet_b0",
-                pretrained=pretrained,
-                layers_to_freeze=layers_to_freeze,
-            )
-
-    elif "swin" in backbone_arch.lower():
-        return backbones.Swin(
-            model_name="swinv2_base_window12to16_192to256_22kft1k",
-            pretrained=pretrained,
-            layers_to_freeze=layers_to_freeze,
         )
 
 
@@ -60,8 +41,8 @@ def get_aggregator(agg_arch: str = "AVG", agg_config: dict = {}) -> nn.Module:
     """
 
     if "cosplace" in agg_arch.lower():
-        assert "in_dim" in agg_config #2048
-        assert "out_dim" in agg_config #512
+        assert "in_dim" in agg_config  # 2048
+        assert "out_dim" in agg_config  # 512
         return aggregators.CosPlace(**agg_config)
 
     elif "avg" in agg_arch.lower():
