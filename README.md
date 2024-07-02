@@ -152,7 +152,7 @@ The configuration argument are:
 - `{reload_dataloaders_every_n_epochs}`: Frequency of reloading data loaders.
 - `{log_every_n_steps}`: Frequency of logging.
 - `{fast_dev_run}`: Boolean for fast development run.
-- {model_path}: trained model path for testing
+- `{model_path}`: trained model path for testing
 - `{experiment_phase}`: Experiment phase, e.g., "train", "test", or "all".
 
 # Results
