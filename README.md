@@ -27,8 +27,9 @@ Our results demonstrate significant improvements in VG tasks by optimizing the c
 - All places are physically distant (at least 100 meters between any pair of places).
 
 The following figure represents the adapted architecture
-![architecture](https://github.com/aliyassine26/gsv-cities/blob/main/images/architecture.jpg)
 
+
+![architecture](images\architecture.jpg)
 
 ## Setting
 
@@ -49,18 +50,17 @@ The project can be run both in a local environment (if at least a GPU is present
    !source activate /content/gsv_env_main && pip install -r /content/drive/MyDrive/requirements2.txt
    pip install -r /content/drive/MyDrive/GSV_CITIES_DATA/requirements.txt
    ```
-
 3. Add the needed datasets
 
    - gsvxs: download it and copy it under /content
    - sfxs: download it and copy it under /content
    - tokyo: download it and copy it under /content
-
 4. change directory to be in gsv-cities repo
    !cd gsv-cities
 5. Go to the run section
 
 # Example Run
+
 ```python
 source activate /content/gsv_env_main && python3 main.py \
    --batch_size 100
@@ -107,6 +107,7 @@ source activate /content/gsv_env_main && python3 main.py \
    --model_path ''
    --experiment_phase "train"
 ```
+
 The configuration argument are:
 
 - `{batch_size}`: Number of images per batch.
@@ -165,7 +166,7 @@ Visualization of the prediction files resultiing from testing can be visualized 
 
 ## Acknowledgements
 
-This project builds on the foundational work of Ali-bey, Amar, Chaib-draa, Brahim, and Giguère, Philippe in their paper ["GSV-Cities: Toward Appropriate Supervised Visual Place Recognition"](https://arxiv.org/abs/2210.10239). We extend our gratitude to the original authors for their significant contributions to the field.We would like to extend our sincere gratitude to [Professor Barbara Caputo](https://www.polito.it/personale?p=barbara.caputo) and Teaching Assistant [Gabriele Trivigno](https://www.polito.it/personale?p=gabriele.trivigno) for their invaluable guidance, support, and insights throughout the course of this project. Their expertise and encouragement have been instrumental in the successful completion of our work.
+This project builds on the foundational work of Ali-bey, Amar, Chaib-draa, Brahim, and Giguère, Philippe in their paper [&#34;GSV-Cities: Toward Appropriate Supervised Visual Place Recognition&#34;](https://arxiv.org/abs/2210.10239). We extend our gratitude to the original authors for their significant contributions to the field.We would like to extend our sincere gratitude to [Professor Barbara Caputo](https://www.polito.it/personale?p=barbara.caputo) and Teaching Assistant [Gabriele Trivigno](https://www.polito.it/personale?p=gabriele.trivigno) for their invaluable guidance, support, and insights throughout the course of this project. Their expertise and encouragement have been instrumental in the successful completion of our work.
 
 ## References
 
