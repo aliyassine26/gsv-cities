@@ -31,10 +31,6 @@ def get_validation_recalls(r_list: np.ndarray,
     """
 
     embed_size = r_list.shape[1]
-
-    r_list = torch.tensor(r_list, dtype=torch.float32)  # changed
-    q_list = torch.tensor(q_list, dtype=torch.float32)  # changed
-
     if faiss_gpu:
         res = faiss.StandardGpuResources()
         flat_config = faiss.GpuIndexFlatConfig()
@@ -44,8 +40,7 @@ def get_validation_recalls(r_list: np.ndarray,
     # build index
     else:
         faiss_index = faiss.IndexFlatL2(embed_size)
-
-    # print(r_list)
+    
     # add references
     faiss_index.add(r_list)
 

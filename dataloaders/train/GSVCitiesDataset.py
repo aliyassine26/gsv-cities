@@ -277,12 +277,12 @@ class GSVCitiesDataset(GSVBaseDataset):
         with all duplicate place_ids removed.
         """
         # read the first city dataframe
-        df = pd.read_csv(self.dataframes_dir + f"\\{self.cities[0].lower()}.csv")
+        df = pd.read_csv(self.dataframes_dir + f"/{self.cities[0].lower()}.csv")
         df = df.sample(frac=1)  # shuffle the city dataframe
 
         # append other cities one by one
         for i in range(1, len(self.cities)):
-            tmp_df = pd.read_csv(self.dataframes_dir + f"\\{self.cities[i].lower()}.csv")
+            tmp_df = pd.read_csv(self.dataframes_dir + f"/{self.cities[i].lower()}.csv")
 
             # Now we add a prefix to place_id, so that we
             # don't confuse, say, place number 13 of NewYork

@@ -27,10 +27,10 @@ class FeatureMixerLayer(nn.Module):
 
 class MixVPR(nn.Module):
     def __init__(self,
-                 in_channels=1024,
+                 in_channels=256,
                  in_h=20,
                  in_w=20,
-                 out_channels=512,
+                 out_channels=128,
                  mix_depth=1,
                  mlp_ratio=1,
                  out_rows=4,

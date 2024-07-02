@@ -1,6 +1,32 @@
 import argparse
 import json
 
+TRAIN_CITIES = [
+    "Bangkok",
+    "BuenosAires",
+    "LosAngeles",
+    "MexicoCity",
+    "OSL",  # refers to Oslo
+    "Rome",
+    "Barcelona",
+    "Chicago",
+    "Madrid",
+    "Miami",
+    "Phoenix",
+    "TRT",  # refers to Toronto
+    "Boston",
+    "Lisbon",
+    "Medellin",
+    "Minneapolis",
+    "PRG",  # refers to Prague
+    "WashingtonDC",
+    "Brussels",
+    "London",
+    "Melbourne",
+    "Osaka",
+    "PRS",  # refers to Paris
+]
+
 
 def parse_tuple(input_str):
     return tuple(map(int, input_str.strip("()").split(",")))
@@ -47,14 +73,10 @@ def parse_args():
         default={},
         help="Configuration for the aggregator",
     )
-    parser.add_argument("--lr", type=float, default=0.0002,
-                        help="Learning rate")
-    parser.add_argument("--optimizer", type=str,
-                        default="adam", help="Optimizer type")
-    parser.add_argument("--weight_decay", type=float,
-                        default=0, help="Weight decay")
-    parser.add_argument("--momentum", type=float,
-                        default=0.9, help="Momentum for SGD")
+    parser.add_argument("--lr", type=float, default=0.0002, help="Learning rate")
+    parser.add_argument("--optimizer", type=str, default="adam", help="Optimizer type")
+    parser.add_argument("--weight_decay", type=float, default=0, help="Weight decay")
+    parser.add_argument("--momentum", type=float, default=0.9, help="Momentum for SGD")
     parser.add_argument(
         "--warmpup_steps", type=int, default=600, help="Number of warmpup steps"
     )
@@ -83,16 +105,17 @@ def parse_args():
         "--miner_margin", type=float, default=0.1, help="Margin for the miner"
     )
     parser.add_argument(
-        "--faiss_gpu", type=bool, default=False, help="Use FAISS GPU for validation"
+        "--faiss_gpu", type=bool, default=True, help="Use FAISS GPU for validation"
     )
 
-    # Data module arguments
-    parser.add_argument("--batch_size", type=int,
-                        default=100, help="Batch size")
-    parser.add_argument("--img_per_place", type=int,
-                        default=4, help="Images per place")
     parser.add_argument(
-        "--min_img_per_place", type=int, default=4, help="Minimum images per place"
+        "--cities", type=parse_list, default=TRAIN_CITIES, help="Cities to use"
+    )
+    # Data module arguments
+    parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
+    parser.add_argument("--img_per_place", type=int, default=2, help="Images per place")
+    parser.add_argument(
+        "--min_img_per_place", type=int, default=2, help="Minimum images per place"
     )
     parser.add_argument(
         "--shuffle_all",
@@ -120,6 +143,26 @@ def parse_args():
         type=parse_list,
         default=["sfxs_val"],
         help="Validation set names",
+    )
+
+    parser.add_argument(
+        "--model_path",
+        type=str,
+        default="",
+        help="Path to the model checkpoint",
+    )
+    parser.add_argument(
+        "--experiment_phase",
+        type=str,
+        default="train",
+        help="Experiment name",
+    )
+
+    parser.add_argument(
+        "--test_set_names",
+        type=parse_list,
+        default='["sfxs_test", "tokyoxs_test"]',
+        help="Test set names",
     )
 
     # ModelCheckpoint arguments
@@ -177,10 +220,10 @@ def parse_args():
         help="Number of sanity validation steps",
     )
     parser.add_argument(
-        "--precision", type=int, default=16, help="Precision (16 or 32)"
+        "--precision", type=int, default=32, help="Precision (16 or 32)"
     )
     parser.add_argument(
-        "--max_epochs", type=int, default=30, help="Maximum number of epochs"
+        "--max_epochs", type=int, default=1, help="Maximum number of epochs"
     )
     parser.add_argument(
         "--check_val_every_n_epoch",
