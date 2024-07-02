@@ -26,7 +26,9 @@ Our results demonstrate significant improvements in VG tasks by optimizing the c
 - GSV-Cities contains ~530,000 images representing ~62,000 different places, spread across multiple cities around the globe.
 - All places are physically distant (at least 100 meters between any pair of places).
 
-![example](image/README/1677601845733.png)
+The following figure represents the adapted architecture
+![architecture](https://github.com/aliyassine26/gsv-cities/blob/main/images/architecture.jpg)
+
 
 ## Setting
 
@@ -167,4 +169,4 @@ This project builds on the foundational work of Ali-bey, Amar, Chaib-draa, Brahi
 
 ## References
 
-Refer to the [[Enhanced VPR Repor](https://drive.google.com/file/d/16CRoMpZiEWOgb9R-ypXJBS4GIVcbOLu-/view?usp=drive_link)t] for a comprehensive list of references used in this project.
+Refer to the [Enhanced VPR Report](https://drive.google.com/file/d/16CRoMpZiEWOgb9R-ypXJBS4GIVcbOLu-/view?usp=drive_link) for a comprehensive list of references used in this project.
