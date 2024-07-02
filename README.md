@@ -38,7 +38,7 @@ The project can be run both in a local environment (if at least a GPU is present
    `git clone https://github.com/aliyassine26/gsv-cities.git `
 2. Install the required libraries
 
-   ```
+   ```python
    !pip install -q condacolab
    import condacolab
    condacolab.install()
@@ -59,9 +59,52 @@ The project can be run both in a local environment (if at least a GPU is present
 5. Go to the run section
 
 # Example Run
-
-source activate /content/gsv_env_main && python3 main.py \ --batch_size 100 --img_per_place 4 --min_img_per_place 4 --shuffle_all False --random_sample_from_each_place True --image_size "(320, 320)" --num_workers 8 --show_data_stats True--val_set_names '["sfxs_val"]' --test_set_names '["sfxs_test", "tokyoxs_test"]' --backbone_arch "resnet18" --pretrained True --layers_to_freeze -1 --layers_to_crop '[4]' --agg_arch "Gem" --agg_config '{"p":3}' --lr 0.0002 --optimizer "adam" --weight_decay 0 --momentum 0.9 --warmpup_steps 600 --milestones '[5, 10, 15, 25]' --lr_mult 0.3 --loss_name "MultiSimilarityLoss" --miner_name "BatchHardMiner" --miner_margin 0.1 --faiss_gpu True --monitor "sfxs_val/R1" --filename "{self.backbone_arch}\_epoch({epoch:02d})\_step({step:04d})\_R1[{pitts30k_val/R1:.4f}]\_R5[{sfxs_val/R5:.4f}]" --auto_insert_metric_name False --save_weights_only True --save_top_k 3 --mode "max" --accelerator "gpu" --devices 1 --default_root_dir "./LOGS/{self.backbone_arch}" --num_sanity_val_steps 0 --precision 32 --max_epochs 8 --check_val_every_n_epoch 1 --reload_dataloaders_every_n_epochs 1 --log_every_n_steps 20 --fast_dev_run False --model_path '' --experiment_phase "train"
-
+```python
+source activate /content/gsv_env_main && python3 main.py \
+   --batch_size 100
+   --img_per_place 4
+   --min_img_per_place 4
+   --shuffle_all False
+   --random_sample_from_each_place True
+   --image_size "(320, 320)"
+   --num_workers 8
+   --show_data_stats True
+   --val_set_names '["sfxs_val"]'
+   --test_set_names '["sfxs_test", "tokyoxs_test"]'
+   --backbone_arch "resnet18"
+   --pretrained True
+   --layers_to_freeze -1
+   --layers_to_crop '[4]'
+   --agg_arch "Gem"
+   --agg_config '{"p":3}'
+   --lr 0.0002 --optimizer "adam"
+   --weight_decay 0
+   --momentum 0.9
+   --warmpup_steps 600
+   --milestones '[5, 10, 15, 25]'
+   --lr_mult 0.3
+   --loss_name "MultiSimilarityLoss"
+   --miner_name "BatchHardMiner"
+   --miner_margin 0.1
+   --faiss_gpu True
+   --monitor "sfxs_val/R1"
+   --filename "{self.backbone_arch}\_epoch({epoch:02d})\_step({step:04d})\_R1[{pitts30k_val/R1:.4f}]\_R5[{sfxs_val/R5:.4f}]"
+   --auto_insert_metric_name False
+   --save_weights_only True
+   --save_top_k 3 --mode "max"
+   --accelerator "gpu"
+   --devices 1
+   --default_root_dir "./LOGS/{self.backbone_arch}"
+   --num_sanity_val_steps 0
+   --precision 32
+   --max_epochs 8
+   --check_val_every_n_epoch 1
+   --reload_dataloaders_every_n_epochs 1
+   --log_every_n_steps 20
+   --fast_dev_run False
+   --model_path ''
+   --experiment_phase "train"
+```
 The configuration argument are:
 
 - `{batch_size}`: Number of images per batch.
