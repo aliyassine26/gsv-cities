@@ -1,223 +1,126 @@
-# GSV-Cities
+# Enhanced Visual Place Recognition with GSV-Cities
 
-Official repo for *Neurocomputing 2022* paper
-**GSV-Cities: Toward Appropriate Supervised Visual Place Recognition**
+This repository contains the code and resources for our enhanced visual place recognition project, building on the foundational work of the GSV-Cities report. Our extensions include various miners, loss functions, and aggregation modules to improve the performance of visual geo-localization systems
 
-[[ArXiv](https://arxiv.org/abs/2210.10239)] [[ScienceDirect](https://www.sciencedirect.com/science/article/abs/pii/S0925231222012188)] [[Bibtex](https://github.com/amaralibey/gsv-cities#cite)] [[Dataset](https://www.kaggle.com/datasets/amaralibey/gsv-cities)]
-
-* The dataset is hosted on [[Kaggle](https://www.kaggle.com/datasets/amaralibey/gsv-cities)].
-* Training can be run from `main.py`, the code is commented and should be clear. Feel free to open an issue if you have any question.
-* To evaluate trained models, we rewrote the evaluation script for 8 benchmarks, check the included [Jupyter Notebook](https://github.com/amaralibey/gsv-cities/tree/main/notebooks/evaluate_model.ipynb)
+- The dataset GSV XS is hosted on [[Kaggle](https://www.kaggle.com/datasets/giovannimonco22/gsv-xs)].
+- The datasets Tokyo XS and SF XS are available on [[Google Drive](https://drive.google.com/drive/folders/1Ucy9JONT26EjDAjIJFhuL9qeLxgSZKmf?usp=share_link)]
+- Training and testing can be run from `runner.ipynb`, the code is commented and should be clear. Feel free to open an issue if you have any question.
 
 ---
 
 ## **Summary of the paper**
 
-1. We collected **GSV-Cities**, a large-scale dataset for the task of Visual Place Recognition, with highly accurate ground truth.
-   * It contains ~530k images.
-   * There are more than 62k different places, spread across multiple cities around the globe.
-   * Each place is depited by at least 4 images (up to 20 images).
-   * All places are physically distant (at least 100 meters between any pair of places).
-2. We proposed a fully convolutional aggregation technique (called **Conv-AP**) that outperforms NetVLAD and most existing SotA techniques.
-3. We consider representation learning for visual place recognition as a three components pipeline as follows:
+Our paper, "Leveraging Losses, Miners, and Aggregators for Enhanced Visual Place Recognition with GSV-Cities," explores advancements in Visual Geo-Localization (VG), which involves identifying an image’s location by comparing it against a comprehensive database of geo-tagged images. We build on the foundational work of the GSV-Cities framework by experimenting with various components to enhance the performance of image retrieval frameworks.
 
-![pipeline](image/README/1677603273600.png)
+Key contributions include:
 
-What can we do with GSV-Cities dataset and the code base in this repo?
+- **Backbone Network** : Using ResNet-18 as the baseline network.
+- **Loss Functions** : Experimenting with MultiSimilarity Loss, Angular Loss, Triplet Margin Loss, FastAP Loss, and NTXent Loss to improve retrieval accuracy.
+- **Miners** : Incorporating MultiSimilarityMiner, UniformHistogramMiner, AngularMiner, BatchHardMiner, and BatchEasyHardMiner to select informative samples during training.
+- **Aggregation Modules** : Exploring AVG, GeM, MixVPR, Cosplace, and ConvAP to enhance embedding quality.
 
-* Obtain new state-of-the-art performance.
-* Train visual place recognition models *extremely* rapidly.
-* No offline triplet mining: GSV-Cities contains highly accurate ground truth. Batches are formed in a traightforward way, bypassing all the hassle of triplet preprocessing.
-* Rapid prototyping: no need to wait days for convergence (expect 10-15 minutes of per epoch).
-* All existing techniques can benefit from training on GSV-Cities.
+Our results demonstrate significant improvements in VG tasks by optimizing the combination of these components. The best-performing configuration utilizes Cosplace aggregation with MultiSimilarityMiner and MultiSimilarityLoss, achieving state-of-the-art results on benchmark datasets. The code and datasets used in this study are available in this repository, enabling further research and development in the field of visual place recognition.
 
-## Trained models
+## GSV-Cities XS dataset overview
 
-Please refer to the following [Jupyter Notebook](https://github.com/amaralibey/gsv-cities/tree/main/notebooks/evaluate_model.ipynb) for evaluation.
-
-
-<table>
-<thead>
-  <tr>
-    <th rowspan="2">Backbone</th>
-    <th rowspan="2">Output<br>dimension</th>
-    <th colspan="2">Pitts250k-test</th>
-    <th colspan="2">Pitts30k-test</th>
-    <th colspan="2">MSLS-val</th>
-    <th colspan="2">Nordland</th>
-    <th rowspan="2"></th>
-  </tr>
-  <tr>
-    <th>R@1</th>
-    <th>R@5</th>
-    <th>R@1</th>
-    <th>R@5</th>
-    <th>R@1</th>
-    <th>R@5</th>
-    <th>R@1</th>
-    <th>R@5</th>
-  </tr>
-</thead>
-<tbody>
-  <tr>
-    <td rowspan="4">ResNet50</td>
-    <td>8192<br>[2048x2x2]</td>
-    <td>92.8</td>
-    <td>97.7</td>
-    <td>90.5</td>
-    <td>95.2</td>
-    <td>83.1</td>
-    <td>90.3</td>
-    <td>42.7</td>
-    <td>58.8</td>
-    <td rowspan="4"><a href="https://drive.google.com/drive/folders/1VYPw9uGD11NgiGFgfWueLt3noJYOIuhL">LINK</a></td>
-  </tr>
-  <tr>
-    <td>4096<br>[1024x2x2]</td>
-    <td>92.5</td>
-    <td>97.7</td>
-    <td>90.5</td>
-    <td>95.3</td>
-    <td>83.5</td>
-    <td>89.7</td>
-    <td>42.6</td>
-    <td>59.8</td>
-  </tr>
-  <tr>
-    <td>2048<br>[512x2x2]</td>
-    <td>92.3</td>
-    <td>97.5</td>
-    <td>90.6</td>
-    <td>95.1</td>
-    <td>83.4</td>
-    <td>90.3</td>
-    <td>40.3</td>
-    <td>56.6</td>
-  </tr>
-  <tr>
-    <td>512<br>[128x2x2]</td>
-    <td>90.7</td>
-    <td>96.6</td>
-    <td>89.1</td>
-    <td>94.6</td>
-    <td>82.6</td>
-    <td>90.0</td>
-    <td>36.3</td>
-    <td>53.1</td>
-  </tr>
-</tbody>
-</table>
-
-
-Code to load the pretrained weights is as follows:
-
-```python
-from main import VPRModel
-
-# Note that these models have been trained with images resized to 320x320
-# Also, either use BILINEAR or BICUBIC interpolation when resizing.
-# The model with 4096-dim output has been trained with images resized with bicubic interpolation
-# The model with 8192-dim output with bilinear interpolation
-# ConvAP works with all image sizes, but best performance can be achieved when resizing to the training resolution
-
-model = VPRModel(backbone_arch='resnet50', 
-                 layers_to_crop=[],
-                 agg_arch='ConvAP',
-                 agg_config={'in_channels': 2048,
-                            'out_channels': 1024,
-                            's1' : 2,
-                            's2' : 2},
-                )
-
-
-state_dict = torch.load('./LOGS/resnet50_ConvAP_1024_2x2.ckpt')
-model.load_state_dict(state_dict)
-model.eval()
-
-```
-
----
-
-## GSV-Cities dataset overview
-
-* GSV-Cities contains ~530,000 images representing ~62,000 different places, spread across multiple cities around the globe.
-* All places are physically distant (at least 100 meters between any pair of places).
+- GSV-Cities contains ~530,000 images representing ~62,000 different places, spread across multiple cities around the globe.
+- All places are physically distant (at least 100 meters between any pair of places).
 
 ![example](image/README/1677601845733.png)
 
-#### **Database organisation**
+## Setting
 
-Unlike existing visual place recognition datasets where images are organised in a way that's not (so humanly) explorable. Images in GSV-Cities are named as follows:
+The project can be run both in a local environment (if at least a GPU is present) or on a google colab. refer to the file runner.ipynb in the notebooks folder.
 
-`city_placeID_year_month_bearing_latitude_longitude_panoid.JPG`
+### Google colab
 
-This way of naming has the advantage of exploring the dataset using the default Image Viewer of the OS, and also, adding redondancy of the metadata in case the Dataframes get lost or corrupt.
+1. Clone the project repository
+   `git clone https://github.com/aliyassine26/gsv-cities.git `
+2. Install the required libraries
 
-The dataset is organised as follows:
+   ```
+   !pip install -q condacolab
+   import condacolab
+   condacolab.install()
+   # Create the Conda environment in the specified folder
+   !conda create --prefix "$env_path" python=3.8.4 -y
+   !source activate /content/gsv_env_main && pip install -r /content/drive/MyDrive/requirements2.txt
+   pip install -r /content/drive/MyDrive/GSV_CITIES_DATA/requirements.txt
+   ```
 
-```
-├── Images
-│   ├── Paris
-│   │   ├── ...
-│   │   ├── PRS_0000003_2015_05_584_48.79733778544615_2.231461206488333_7P0FnGV3k4Fmtw66b8_-Gg.JPG
-│   │   ├── PRS_0000003_2018_05_406_48.79731397404108_2.231417994064803_R2vU9sk2livhkYbhy8SFfA.JPG
-│   │   ├── PRS_0000003_2019_07_411_48.79731121699659_2.231424930041198_bu4vOZzw3_iU5QxKiQciJA.JPG
-│   │   ├── ...
-│   ├── Boston
-│   │   ├── ...
-│   │   ├── Boston_0006385_2015_06_121_42.37599246498178_-71.06902130162344_2MyXGeslIiua6cMcDQx9Vg.JPG
-│   │   ├── Boston_0006385_2018_09_117_42.37602467319898_-71.0689666533628_NWx_VsRKGwOQnvV8Gllyog.JPG
-│   │   ├── ...
-│   ├── Quebec
-│   │   ├── ...
-│   ├── ...
-└── Dataframes
-    ├── Paris.csv
-    ├── London.csv
-    ├── Quebec.csv
-    ├── ...
+3. Add the needed datasets
 
-```
+   - gsvxs: download it and copy it under /content
+   - sfxs: download it and copy it under /content
+   - tokyo: download it and copy it under /content
 
-Each datadrame contains the metadata of the its corresponding city. This will help access the dataset almost instantly using Pandas. For example, we show 5 rows from London.csv:
+4. change directory to be in gsv-cities repo
+   !cd gsv-cities
+5. Go to the run section
 
-| place_id | year | month | northdeg | city_id |     lat |        lon | panoid                 |
-| -------: | ---: | ----: | -------: | :------ | ------: | ---------: | :--------------------- |
-|      130 | 2018 |     4 |       15 | London  | 51.4861 | -0.0895151 | 6jFjb3wGyCkcBfq4k559ag |
-|     6793 | 2016 |     7 |        2 | London  | 51.5187 |  -0.160767 | Ff3OtsS4ihGSPdPjtlpEUA |
-|     9292 | 2018 |     1 |      289 | London  |  51.531 |   -0.12702 | 0t-xcCsazIGAjdNC96IF0w |
-|     7660 | 2015 |     6 |       97 | London  | 51.5233 |  -0.158693 | zFbmpj8jt8natu7IPYrh_w |
-|     8713 | 2008 |     9 |      348 | London  | 51.5281 |  -0.127114 | W3KMPec54NBqLMzmZmGv-Q |
+# Example Run
 
- And If we want only places that are depicted by at least 8 images each, we can simply filter the dataset using pandas as follows:
+source activate /content/gsv_env_main && python3 main.py \ --batch_size 100 --img_per_place 4 --min_img_per_place 4 --shuffle_all False --random_sample_from_each_place True --image_size "(320, 320)" --num_workers 8 --show_data_stats True--val_set_names '["sfxs_val"]' --test_set_names '["sfxs_test", "tokyoxs_test"]' --backbone_arch "resnet18" --pretrained True --layers_to_freeze -1 --layers_to_crop '[4]' --agg_arch "Gem" --agg_config '{"p":3}' --lr 0.0002 --optimizer "adam" --weight_decay 0 --momentum 0.9 --warmpup_steps 600 --milestones '[5, 10, 15, 25]' --lr_mult 0.3 --loss_name "MultiSimilarityLoss" --miner_name "BatchHardMiner" --miner_margin 0.1 --faiss_gpu True --monitor "sfxs_val/R1" --filename "{self.backbone_arch}\_epoch({epoch:02d})\_step({step:04d})\_R1[{pitts30k_val/R1:.4f}]\_R5[{sfxs_val/R5:.4f}]" --auto_insert_metric_name False --save_weights_only True --save_top_k 3 --mode "max" --accelerator "gpu" --devices 1 --default_root_dir "./LOGS/{self.backbone_arch}" --num_sanity_val_steps 0 --precision 32 --max_epochs 8 --check_val_every_n_epoch 1 --reload_dataloaders_every_n_epochs 1 --log_every_n_steps 20 --fast_dev_run False --experiment_phase "train"
 
-```
-df = pd.read_csv('London.csv')
-df = df[df.groupby('place_id')['place_id'].transform('size') >= 8]
-```
+The configuration argument are:
 
-Notice that given a Dataframe row, we can directly read its corresponding image (the first row of the above example corresponds to the image named `./Images/London/London_0000130_2018_04_015_51.4861_-0.0895151_6jFjb3wGyCkcBfq4k559ag.JPG`)
+- `{batch_size}`: Number of images per batch.
+- `{img_per_place}`: Number of images per place.
+- `{min_img_per_place}`: Minimum number of images per place.
+- `{shuffle_all}`: Boolean to shuffle all data.
+- `{random_sample_from_each_place}`: Boolean to randomly sample from each place.
+- `{image_size}`: Size of the images, e.g., "(320, 320)".
+- `{num_workers}`: Number of workers for data loading.
+- `{show_data_stats}`: Boolean to show data statistics.
+- `{val_set_names}`: Names of the validation sets, e.g., '["sfxs_val"]'.
+- `{test_set_names}`: Names of the test sets, e.g., '["sfxs_test", "tokyoxs_test"]'.
+- `{backbone_arch}`: Architecture of the backbone network, e.g., "resnet18".
+- `{pretrained}`: Boolean for using pretrained weights.
+- `{layers_to_freeze}`: Layers to freeze during training, e.g., -1.
+- `{layers_to_crop}`: Layers to crop, e.g., '[4]'.
+- `{agg_arch}`: Aggregation architecture, e.g., "Gem".
+- `{agg_config}`: Configuration for the aggregation module, e.g., '{"p":3}'.
+- `{lr}`: Learning rate.
+- `{optimizer}`: Optimizer type, e.g., "adam".
+- `{weight_decay}`: Weight decay for the optimizer.
+- `{momentum}`: Momentum for the optimizer.
+- `{warmpup_steps}`: Number of warmup steps.
+- `{milestones}`: Milestones for learning rate scheduler, e.g., '[5, 10, 15, 25]'.
+- `{lr_mult}`: Learning rate multiplier.
+- `{loss_name}`: Name of the loss function, e.g., "MultiSimilarityLoss".
+- `{miner_name}`: Name of the miner, e.g., "BatchHardMiner".
+- `{miner_margin}`: Margin for the miner.
+- `{faiss_gpu}`: Boolean to use FAISS on GPU.
+- `{monitor}`: Metric to monitor, e.g., "sfxs_val/R1".
+- `{filename}`: Filename template for saving models.
+- `{auto_insert_metric_name}`: Boolean to auto-insert metric name in filenames.
+- `{save_weights_only}`: Boolean to save weights only.
+- `{save_top_k}`: Number of top models to save.
+- `{mode}`: Mode for saving best models, e.g., "max".
+- `{accelerator}`: Accelerator type, e.g., "gpu".
+- `{devices}`: Number of devices (GPUs) to use.
+- `{default_root_dir}`: Default root directory for logs and models.
+- `{num_sanity_val_steps}`: Number of sanity validation steps.
+- `{precision}`: Precision for training, e.g., 32.
+- `{max_epochs}`: Maximum number of epochs.
+- `{check_val_every_n_epoch}`: Frequency of validation checks.
+- `{reload_dataloaders_every_n_epochs}`: Frequency of reloading data loaders.
+- `{log_every_n_steps}`: Frequency of logging.
+- `{fast_dev_run}`: Boolean for fast development run.
+- `{experiment_phase}`: Experiment phase, e.g., "train", "test", or "all".
 
-We can, for example, query the dataset with *only places that are in the northern hemisphere, taken between 2012 and 2016 during the month of July, each depicted by at least 16 images*.
+# Results
 
-*Stay tuned for tutorials in the comming weeks.*
+Results from various combinations of miners, losses and aggregation can be found in the file VPR Runs for further insights
 
-#### Tensorboard
-```tensorboard --logdir D:/Github/gsv-cities/LOGS/resnet18/lightning_logs/version_0```
+# Visualization
 
+Visualization of the prediction files resultiing from testing can be visualized using the file images.ipynb in the notebook folder
 
-# Cite
+## Acknowledgements
 
-Use the following bibtex code to cite our paper
+This project builds on the foundational work of Ali-bey, Amar, Chaib-draa, Brahim, and Giguère, Philippe in their paper "GSV-Cities: Toward Appropriate Supervised Visual Place Recognition". We extend our gratitude to the original authors for their significant contributions to the field.We would like to extend our sincere gratitude to Professor Barbara Caputo and Teaching Assistant Gabrielle Trivigno for their invaluable guidance, support, and insights throughout the course of this project. Their expertise and encouragement have been instrumental in the successful completion of our work.
 
-```
-@article{ali2022gsv,
-  title={GSV-Cities: Toward appropriate supervised visual place recognition},
-  author={Ali-bey, Amar and Chaib-draa, Brahim and Gigu{\`e}re, Philippe},
-  journal={Neurocomputing},
-  volume={513},
-  pages={194--203},
-  year={2022},
-  publisher={Elsevier}
-}
-```
+## References
+
+Refer to the [[Enhanced VPR Repor](https://drive.google.com/file/d/16CRoMpZiEWOgb9R-ypXJBS4GIVcbOLu-/view?usp=drive_link)t] for a comprehensive list of references used in this project.
