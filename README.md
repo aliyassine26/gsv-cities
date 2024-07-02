@@ -161,7 +161,7 @@ Results from various combinations of miners, losses and aggregation can be found
 
 # Visualization
 
-Visualization of the prediction files resultiing from testing can be visualized using the file images.ipynb in the notebook folder
+Visualization of the prediction files resultiing from testing can be visualized using the file `images.ipynb` in the notebook folder
 
 ## Acknowledgements
 
