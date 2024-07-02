@@ -1,3 +1,4 @@
+# https://github.com/aliyassine26/gsv-cities/
 
 from pathlib import Path
 import numpy as np
@@ -7,12 +8,7 @@ import sys
 
 MAIN_PATH = Path(__file__).resolve().parent.parent.parent / "utils"
 sys.path.append(str(MAIN_PATH))
-from config import GT_ROOT, SF_XS_PATH
-# NOTE: you need to download the Nordland dataset from  https://surfdrive.surf.nl/files/index.php/s/sbZRXzYe3l0v67W
-# this link is shared and maintained by the authors of VPR_Bench: https://github.com/MubarizZaffar/VPR-Bench
-# the folders named ref and query should reside in DATASET_ROOT path
-# I hardcoded the image names and ground truth for faster evaluation
-# performance is exactly the same as if you use VPR-Bench.
+from config import GT_ROOT, SF_XS_PATH # type: ignore
 DATASET_ROOT = SF_XS_PATH
 
 path_obj = Path(DATASET_ROOT)
@@ -29,6 +25,29 @@ if not path_obj.joinpath("database") or not path_obj.joinpath("queries"):
 
 class SFXSDataset(Dataset):
     def __init__(self, which_ds="sfxs_val", input_transform=None):
+        """
+        Initializes a new instance of the SFXSDataset class.
+
+        Args:
+            which_ds (str, optional): The dataset to use. Defaults to "sfxs_val".
+                Must be either "sfxs_val" or "sfxs_test".
+            input_transform (callable, optional): A function that takes a PIL Image and
+                returns a transformed version. Defaults to None.
+
+        Raises:
+            AssertionError: If which_ds is not "sfxs_val" or "sfxs_test".
+
+
+            - input_transform (callable): The input transform function.
+            - dbImages (numpy.ndarray): An array of reference images.
+            - qImages (numpy.ndarray): An array of query images.
+            - ground_truth (numpy.ndarray): An array of ground truth for queries.
+            - images (numpy.ndarray): An array of concatenated reference and query images.
+            - num_references (int): The number of reference images.
+            - num_queries (int): The number of query images.
+
+        """
+
 
         assert which_ds.lower() in ["sfxs_val", "sfxs_test"]
 

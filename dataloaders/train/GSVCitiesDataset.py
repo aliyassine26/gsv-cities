@@ -1,4 +1,4 @@
-# https://github.com/amaralibey/gsv-cities
+# https://github.com/aliyassine26/gsv-cities/
 
 import os
 import sys

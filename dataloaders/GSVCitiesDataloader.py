@@ -4,12 +4,12 @@ from torch.utils.data import Sampler
 from dataloaders.train.GSVCitiesDataset import GSVCitiesDataset
 from dataloaders.val.SFXSDataset import SFXSDataset
 from dataloaders.val.TokyoXSDataset import TokyoXSDataset
-import typing
 from prettytable import PrettyTable
 import pytorch_lightning as pl
 
 
-IMAGENET_MEAN_STD = {"mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225]}
+IMAGENET_MEAN_STD = {"mean": [0.485, 0.456,
+                              0.406], "std": [0.229, 0.224, 0.225]}
 
 VIT_MEAN_STD = {"mean": [0.5, 0.5, 0.5], "std": [0.5, 0.5, 0.5]}
 
@@ -94,7 +94,8 @@ class GSVCitiesDataModule(pl.LightningDataModule):
         self.train_transform = T.Compose(
             [
                 T.Resize(image_size, interpolation=T.InterpolationMode.BILINEAR),
-                T.RandAugment(num_ops=3, interpolation=T.InterpolationMode.BILINEAR),
+                T.RandAugment(
+                    num_ops=3, interpolation=T.InterpolationMode.BILINEAR),
                 T.ToTensor(),
                 T.Normalize(mean=self.mean_dataset, std=self.std_dataset),
             ]
@@ -168,13 +169,6 @@ class GSVCitiesDataModule(pl.LightningDataModule):
                             input_transform=self.test_transform,
                         )
                     )
-                # elif "sfxs_val" in test_set_name.lower():
-                #     self.test_datasets.append(
-                #         SFXSDataset(
-                #             which_ds=test_set_name,
-                #             input_transform=self.valid_transform,
-                #         )
-                #     )
                 elif "tokyoxs" in test_set_name.lower():
                     self.test_datasets.append(
                         TokyoXSDataset(
@@ -242,7 +236,8 @@ class GSVCitiesDataModule(pl.LightningDataModule):
             table.header = False
             table.add_row(["# of cities", f"{len(TRAIN_CITIES)}"])
             table.add_row(["# of places", f"{self.train_dataset.__len__()}"])
-            table.add_row(["# of images", f"{self.train_dataset.total_nb_images}"])
+            table.add_row(
+                ["# of images", f"{self.train_dataset.total_nb_images}"])
             print(table.get_string(title="Training Dataset"))
             print()
 
@@ -253,9 +248,11 @@ class GSVCitiesDataModule(pl.LightningDataModule):
             table.header = False
             for i, val_set_name in enumerate(self.val_set_names):
                 table.add_row([f"Validation set {i+1}", f"{val_set_name}"])
-                table.add_row(["# of Queries", f"{self.val_datasets[i].num_queries}"])
                 table.add_row(
-                    ["# of References", f"{self.val_datasets[i].num_references}"]
+                    ["# of Queries", f"{self.val_datasets[i].num_queries}"])
+                table.add_row(
+                    ["# of References",
+                        f"{self.val_datasets[i].num_references}"]
                 )
             print(table.get_string(title="Validation Datasets"))
 
@@ -268,9 +265,11 @@ class GSVCitiesDataModule(pl.LightningDataModule):
             for i, test_set_name in enumerate(self.test_set_names):
                 print(test_set_name)
                 table.add_row([f"Test set {i+1}", f"{test_set_name}"])
-                table.add_row(["# of Queries", f"{self.test_datasets[i].num_queries}"])
                 table.add_row(
-                    ["# of References", f"{self.test_datasets[i].num_references}"]
+                    ["# of Queries", f"{self.test_datasets[i].num_queries}"])
+                table.add_row(
+                    ["# of References",
+                        f"{self.test_datasets[i].num_references}"]
                 )
                 table.add_row(["", ""])
             print(table.get_string(title="Test Datasets"))
@@ -298,7 +297,7 @@ class GSVCitiesDataModule(pl.LightningDataModule):
 if __name__ == "__main__":
     dm = GSVCitiesDataModule()
     dm.setup("fit")
-    # dm.print_stats()
-    # train_loader = dm.train_dataloader()
-    # val_loader = dm.val_dataloader()
+    dm.print_stats()
+    train_loader = dm.train_dataloader()
+    val_loader = dm.val_dataloader()
     print("Finished")

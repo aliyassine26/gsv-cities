@@ -1,4 +1,4 @@
-
+"""A temporary script that has been used for generating dataframe from the GSV XS dataset cities."""
 import os
 import pandas as pd
 
