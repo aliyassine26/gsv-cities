@@ -13,12 +13,48 @@ class ImageLoader:
         if ground_truth_file is not None:
             self.gt_images = np.load(ground_truth_file, allow_pickle=True)
 
+    # def display_image(self, index):
+    #     """Display the image corresponding to the given index in the database."""
+    #     image_path = os.path.join(self.images_directory, self.db_images[index])
+    #     image = plt.imread(image_path)
+    #     plt.imshow(image)
+    #     plt.axis('off')
+
     def display_image(self, index):
         """Display the image corresponding to the given index in the database."""
         image_path = os.path.join(self.images_directory, self.db_images[index])
         image = plt.imread(image_path)
+        plt.title(f"Image {index}")
         plt.imshow(image)
         plt.axis('off')
+        plt.show()
+
+    def display_query_image(self, index):
+        """Display the image corresponding to the given index in the database."""
+        image_path = os.path.join(self.images_directory, self.queries[index])
+        image = plt.imread(image_path)
+        plt.title(f"Image {index}")
+        plt.imshow(image)
+        plt.axis('off')
+        plt.show()
+
+    def display_random_images(self, n=4):
+        """Display random images from the database as a table."""
+        num_images = min(n, len(self.db_images))
+        num_rows = 2
+        num_cols = 3
+        fig, axes = plt.subplots(
+            num_rows, num_cols, figsize=(6, 4))
+        axes = axes.flatten()
+        for i in range(num_images):
+            index = np.random.randint(0, len(self.db_images))
+            image_path = os.path.join(
+                self.images_directory, self.db_images[index])
+            image = plt.imread(image_path)
+            axes[i].imshow(image)
+            axes[i].axis('off')
+            axes[i].set_title(f"Image {index}")
+        plt.tight_layout()
         plt.show()
 
     def show_query_with_predictions(self, query_index):
