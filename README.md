@@ -29,7 +29,7 @@ Our results demonstrate significant improvements in VG tasks by optimizing the c
 The following figure represents the adapted architecture
 
 
-![architecture](images\architecture.jpg)
+![architecture](images/architecture.jpg)
 
 ## Setting
 
